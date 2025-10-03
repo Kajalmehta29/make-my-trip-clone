@@ -33,6 +33,8 @@ import Loader from "@/components/Loader";
 import { setUser } from "@/store";
 import CancellationPolicy from "@/components/CancellationPolicy";
 import ReviewList from "@/components/ReviewList";
+import RoomSelection from "@/components/RoomSelection";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Define TypeScript interfaces for type safety
 interface Review {
@@ -48,6 +50,13 @@ interface Review {
   helpfulUserIds: string[];
 }
 
+interface RoomType {
+  typeName: string;
+  price: number;
+  availability: number;
+  threeDPreviewUrl?: string;
+}
+
 interface Hotel {
   id: string;
   hotelName: string;
@@ -56,7 +65,8 @@ interface Hotel {
   availableRooms: number;
   amenities: string;
   cancellationPolicy: string;
-  reviews: Review[]; // This line fixes the error
+  reviews: Review[];
+  roomTypes?: RoomType[];
 }
 
 const BookHotelPage = () => {
@@ -69,6 +79,7 @@ const BookHotelPage = () => {
   const [open, setopem] = useState(false);
   const dispatch = useDispatch();
   const [checkInDate, setCheckInDate] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchhotels = async () => {
@@ -77,7 +88,15 @@ const BookHotelPage = () => {
         const data = await gethotel();
         if (Array.isArray(data)) {
           const filteredData = data.filter((hotel: any) => hotel.id === id);
-          sethotels(filteredData);
+          const hotelsWithRooms = filteredData.map((hotel) => ({
+            ...hotel,
+            roomTypes: [
+              { typeName: 'Standard Room', price: hotel.pricePerNight, availability: 10, threeDPreviewUrl: 'https://example.com/3d-standard' },
+              { typeName: 'Deluxe King Room', price: hotel.pricePerNight + 500, availability: 5, threeDPreviewUrl: 'https://example.com/3d-deluxe' },
+              { typeName: 'Ocean View Suite', price: hotel.pricePerNight + 1500, availability: 3, threeDPreviewUrl: 'https://example.com/3d-suite' },
+            ]
+          }));
+          sethotels(hotelsWithRooms);
         } else {
           sethotels([]);
         }
@@ -99,6 +118,10 @@ const BookHotelPage = () => {
   }
 
   const hotel = hotels[0];
+  
+  const selectedRoomDetails = hotel.roomTypes?.find(rt => rt.typeName === selectedRoom);
+  const pricePerNight = selectedRoomDetails ? selectedRoomDetails.price : hotel.pricePerNight;
+
 
   const averageRating =
     hotel.reviews && hotel.reviews.length > 0
@@ -142,7 +165,7 @@ const BookHotelPage = () => {
     );
   };
 
-  const totalPrice = hotel?.pricePerNight * quantity;
+  const totalPrice = pricePerNight * quantity;
   const totalTaxes = hotelData?.room.taxes * quantity;
   const grandTotal = totalPrice + totalTaxes;
 
@@ -150,6 +173,10 @@ const BookHotelPage = () => {
     e.preventDefault();
     if (!checkInDate) {
       alert("Please select a check-in date.");
+      return;
+    }
+    if(!selectedRoom) {
+      alert("Please select a room type.");
       return;
     }
     try {
@@ -162,7 +189,7 @@ const BookHotelPage = () => {
       );
       const updateuser = {
         ...user,
-        bookings: [...(user.bookings || []), data],
+        bookings: [...(user.bookings || []), { ...data, selectedRoomType: selectedRoom }],
       };
       dispatch(setUser(updateuser));
       setopem(false);
@@ -175,105 +202,124 @@ const BookHotelPage = () => {
 
   const HotelContent = () => (
     <DialogContent className="sm:max-w-[600px] bg-white">
-      <DialogHeader>
-        <DialogTitle className="text-2xl font-bold flex items-center">
-          <Home className="w-6 h-6 mr-2" />
-          Hotel Booking Details
-        </DialogTitle>
-      </DialogHeader>
-      <div className="grid gap-6 mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="text-black space-y-2">
-            <Label htmlFor="hotelName" className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2" />
-              Hotel Name
-            </Label>
-            <Input id="hotelName" value={hotel.hotelName} readOnly />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="location" className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2" />
-              Location
-            </Label>
-            <Input id="location" value={hotel.location} readOnly />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="pricePerNight" className="flex items-center">
-              <Ticket className="w-4 h-4 mr-2" />
-              Price Per Night
-            </Label>
-            <Input
-              id="pricePerNight"
-              value={`₹ ${hotel.pricePerNight}`}
-              readOnly
-            />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="availableRooms" className="flex items-center">
-              <Ticket className="w-4 h-4 mr-2" />
-              Available Rooms
-            </Label>
-            <Input id="availableRooms" value={hotel.availableRooms} readOnly />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="quantity" className="flex items-center">
-              <Ticket className="w-4 h-4 mr-2" />
-              Number of Rooms to Book
-            </Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              max={hotel.availableRooms}
-              value={quantity}
-              onChange={handleQuantityChange}
-            />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="checkInDate" className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Check-in Date
-            </Label>
-            <Input
-              id="checkInDate"
-              type="date"
-              value={checkInDate}
-              onChange={(e) => setCheckInDate(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="bg-gray-100 rounded-lg p-4">
-          <h3 className="text-black font-bold mb-4 flex items-center">
-            <CreditCard className="w-5 h-5 mr-2" />
-            Fare Summary
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Base Fare</span>
-              <span className="text-black font-medium">
-                ₹ {totalPrice.toLocaleString()}
-              </span>
+      <ScrollArea className="max-h-[80vh]">
+        <DialogHeader className="p-6">
+          <DialogTitle className="text-2xl font-bold flex items-center">
+            <Home className="w-6 h-6 mr-2" />
+            Hotel Booking Details
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-6 mt-4 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="text-black space-y-2">
+              <Label htmlFor="hotelName" className="flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                Hotel Name
+              </Label>
+              <Input id="hotelName" value={hotel.hotelName} readOnly />
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Taxes and Extracharges</span>
-              <span className="text-black font-medium">
-                ₹ {totalTaxes.toLocaleString()}
-              </span>
+            <div className="text-black space-y-2">
+              <Label htmlFor="location" className="flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                Location
+              </Label>
+              <Input id="location" value={hotel.location} readOnly />
             </div>
-            <div className="border-t pt-2 mt-2">
+            <div className="text-black space-y-2">
+              <Label htmlFor="pricePerNight" className="flex items-center">
+                <Ticket className="w-4 h-4 mr-2" />
+                Price Per Night
+              </Label>
+              <Input
+                id="pricePerNight"
+                value={`₹ ${pricePerNight}`}
+                readOnly
+              />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="availableRooms" className="flex items-center">
+                <Ticket className="w-4 h-4 mr-2" />
+                Available Rooms
+              </Label>
+              <Input id="availableRooms" value={hotel.availableRooms} readOnly />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="quantity" className="flex items-center">
+                <Ticket className="w-4 h-4 mr-2" />
+                Number of Rooms to Book
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                max={hotel.availableRooms}
+                value={quantity}
+                onChange={handleQuantityChange}
+              />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="checkInDate" className="flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                Check-in Date
+              </Label>
+              <Input
+                id="checkInDate"
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+              />
+            </div>
+          </div>
+          {hotel.roomTypes && (
+            <RoomSelection 
+              roomTypes={hotel.roomTypes}
+              onRoomSelected={setSelectedRoom}
+              preferredRoomType={user?.preferredRoomType}
+            />
+          )}
+
+          {selectedRoom && (
+             <div className="bg-gray-100 rounded-lg p-4">
+              <h3 className="text-black font-bold mb-2">Selected Room</h3>
+              <p className="text-black">{selectedRoom}</p>
+            </div>
+          )}
+
+          <div className="bg-gray-100 rounded-lg p-4">
+            <h3 className="text-black font-bold mb-4 flex items-center">
+              <CreditCard className="w-5 h-5 mr-2" />
+              Fare Summary
+            </h3>
+            <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-black">Total Amount</span>
-                <span className="font-bold text-black">
-                  ₹ {grandTotal.toLocaleString()}
+                <span className="text-gray-600">Base Fare</span>
+                <span className="text-black font-medium">
+                  ₹ {totalPrice.toLocaleString()}
                 </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Taxes and Extracharges</span>
+                <span className="text-black font-medium">
+                  ₹ {totalTaxes.toLocaleString()}
+                </span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-black">Total Amount</span>
+                  <span className="font-bold text-black">
+                    ₹ {grandTotal.toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <Button className="w-full mt-4" onClick={handlebooking}>
-        Proceed to Payment
-      </Button>
+        <div className="p-6">
+          <Button className="w-full" onClick={handlebooking}>
+            Proceed to Payment
+          </Button>
+        </div>
+      </ScrollArea>
     </DialogContent>
   );
 

@@ -48,7 +48,7 @@ const FlightStatusPage = () => {
               value={flightNumber}
               onChange={(e) => setFlightNumber(e.target.value)}
               required
-              className="text-black"
+              className="text-white"
             />
           </div>
           <Button type="submit" disabled={loading}>

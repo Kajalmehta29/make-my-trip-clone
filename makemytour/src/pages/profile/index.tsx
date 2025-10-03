@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User as UserIcon,
   Phone,
@@ -24,7 +24,7 @@ import {
   cancelBooking,
   addFlightReview,
   addHotelReview,
-  uploadFile, // Make sure to import uploadFile
+  uploadFile,
 } from "@/api";
 import {
   Dialog,
@@ -56,6 +56,8 @@ interface User {
   email: string;
   phoneNumber: string;
   bookings: Booking[];
+  preferredSeatType?: string;
+  preferredRoomType?: string;
 }
 
 interface ReviewFormProps {
@@ -208,12 +210,28 @@ const ProfilePage = () => {
     null
   );
   const [isEditing, setIsEditing] = useState(false);
+
   const [userData, setUserData] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
     phoneNumber: user?.phoneNumber || "",
+    preferredSeatType: user?.preferredSeatType || "any",
+    preferredRoomType: user?.preferredRoomType || "any",
   });
+
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        preferredSeatType: user.preferredSeatType || "any",
+        preferredRoomType: user.preferredRoomType || "any",
+      });
+    }
+  }, [user]);
 
   const handleWriteReview = (booking: Booking) => {
     setSelectedBookingForReview(booking);
@@ -265,18 +283,24 @@ const ProfilePage = () => {
         userData.firstName,
         userData.lastName,
         userData.email,
-        userData.phoneNumber
+        userData.phoneNumber,
+        userData.preferredSeatType,
+        userData.preferredRoomType
       );
       dispatch(setUser(data));
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
-      setUserData({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.email || "",
-        phoneNumber: user.phoneNumber || "",
-      });
+      if (user) {
+        setUserData({
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          email: user.email || "",
+          phoneNumber: user.phoneNumber || "",
+          preferredSeatType: user.preferredSeatType || "any",
+          preferredRoomType: user.preferredRoomType || "any",
+        });
+      }
       setIsEditing(false);
     }
   };
@@ -290,10 +314,13 @@ const ProfilePage = () => {
     });
   };
 
-  const handleEditFormChange = (field: string, value: string) => {
+  const handleEditFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
     setUserData((prevState) => ({
       ...prevState,
-      [field]: value,
+      [name]: value,
     }));
   };
 
@@ -301,11 +328,13 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gray-50 pt-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Profile Section */}
-          <div className="md:col-span-1">
+          {/* Profile & Preferences Column */}
+          <div className="md:col-span-1 space-y-8">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl text-black font-bold">Profile</h2>
+                <h2 className="text-2xl text-black font-bold">
+                  Profile & Preferences
+                </h2>
                 {!isEditing && (
                   <button
                     onClick={() => setIsEditing(true)}
@@ -319,16 +348,16 @@ const ProfilePage = () => {
 
               {isEditing ? (
                 <div className="space-y-4">
+                  {/* Profile Fields */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       First Name
                     </label>
                     <input
                       type="text"
+                      name="firstName"
                       value={userData.firstName}
-                      onChange={(e) =>
-                        handleEditFormChange("firstName", e.target.value)
-                      }
+                      onChange={handleEditFormChange}
                       className="w-full px-3 py-2 border text-black rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
@@ -338,22 +367,10 @@ const ProfilePage = () => {
                     </label>
                     <input
                       type="text"
+                      name="lastName"
                       value={userData.lastName}
-                      onChange={(e) =>
-                        handleEditFormChange("lastName", e.target.value)
-                      }
+                      onChange={handleEditFormChange}
                       className="w-full px-3 py-2 text-black border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={userData.email}
-                      readOnly
-                      className="w-full px-3 py-2 text-black border rounded-lg bg-gray-100"
                     />
                   </div>
                   <div>
@@ -362,20 +379,58 @@ const ProfilePage = () => {
                     </label>
                     <input
                       type="tel"
+                      name="phoneNumber"
                       value={userData.phoneNumber}
-                      onChange={(e) =>
-                        handleEditFormChange("phoneNumber", e.target.value)
-                      }
+                      onChange={handleEditFormChange}
                       className="w-full px-3 py-2 border text-black rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   </div>
-                  <div className="flex space-x-3">
+
+                  {/* Preferences Fields */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-semibold text-black mb-2">
+                      Travel Preferences
+                    </h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Preferred Flight Seat
+                      </label>
+                      <select
+                        name="preferredSeatType"
+                        value={userData.preferredSeatType}
+                        onChange={handleEditFormChange}
+                        className="w-full px-3 py-2 border text-black rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        <option value="any">Any</option>
+                        <option value="window">Window</option>
+                        <option value="aisle">Aisle</option>
+                      </select>
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Preferred Hotel Room
+                      </label>
+                      <select
+                        name="preferredRoomType"
+                        value={userData.preferredRoomType}
+                        onChange={handleEditFormChange}
+                        className="w-full px-3 py-2 border text-black rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      >
+                        <option value="any">Any</option>
+                        <option value="king">King Bed</option>
+                        <option value="twin">Twin Beds</option>
+                        <option value="sea-view">Sea View</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
                     <button
                       onClick={handleSave}
                       className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
                     >
                       <Check className="w-4 h-4" />
-                      <span>Save</span>
+                      <span>Save All</span>
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}
@@ -388,13 +443,12 @@ const ProfilePage = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Display Profile Info */}
                   <div className="flex items-center space-x-3">
                     <UserIcon className="w-5 h-5 text-gray-500" />
-                    <div>
-                      <p className="font-medium text-black">
-                        {user?.firstName} {user?.lastName}
-                      </p>
-                    </div>
+                    <p className="font-medium text-black">
+                      {user?.firstName} {user?.lastName}
+                    </p>
                   </div>
                   <div className="flex items-center text-black space-x-3">
                     <Mail className="w-5 h-5 text-gray-500" />
@@ -404,6 +458,38 @@ const ProfilePage = () => {
                     <Phone className="w-5 h-5 text-gray-500" />
                     <p>{user?.phoneNumber}</p>
                   </div>
+
+                  {/* Display Preferences */}
+                  <div className="border-t pt-4">
+                    <h3 className="text-lg font-semibold text-black mb-4">
+                      Travel Preferences
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <Plane className="w-5 h-5 text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Flight Seat
+                          </p>
+                          <p className="font-medium text-black capitalize">
+                            {user?.preferredSeatType || "Not set"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Building2 className="w-5 h-5 text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Hotel Room
+                          </p>
+                          <p className="font-medium text-black capitalize">
+                            {user?.preferredRoomType || "Not set"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     className="w-full mt-4 flex items-center justify-center space-x-2 text-red-600 hover:text-red-700"
                     onClick={logout}

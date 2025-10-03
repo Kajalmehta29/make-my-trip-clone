@@ -31,6 +31,8 @@ import { Users, Ticket } from "lucide-react";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+import SeatSelection from "@/components/SeatSelection";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Define the Review interface
 interface Review {
@@ -42,7 +44,15 @@ interface Review {
   helpfulCount: number;
 }
 
-// Update the Flight interface to include reviews
+// Define the Seat interface
+interface Seat {
+  seatNumber: string;
+  isAvailable: boolean;
+  isPremium: boolean;
+  price: number;
+}
+
+// Update the Flight interface to include reviews and seats
 interface Flight {
   id: string;
   flightName: string;
@@ -52,7 +62,8 @@ interface Flight {
   arrivalTime: string;
   price: number;
   availableSeats: number;
-  reviews?: Review[]; // Make reviews optional as they might not exist
+  reviews?: Review[];
+  seats?: Seat[]; // Add seats to the interface
 }
 
 const BookFlightPage = () => {
@@ -64,16 +75,27 @@ const BookFlightPage = () => {
   const [open, setopem] = useState(false);
   const user = useSelector((state: any) => state.user.user);
   const dispatch = useDispatch();
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchFlights = async () => {
       if (!id) return;
       try {
         const data = await getflight();
-        // FIX: Ensure data is an array before filtering
         if (Array.isArray(data)) {
           const filteredData = data.filter((flight: any) => flight.id === id);
-          setFlights(filteredData);
+          const flightsWithSeats = filteredData.map((flight) => ({
+            ...flight,
+            seats: Array.from({ length: 30 }, (_, i) => ({
+              seatNumber: `${Math.floor(i / 6) + 1}${String.fromCharCode(
+                65 + (i % 6)
+              )}`,
+              isAvailable: Math.random() > 0.3,
+              isPremium: Math.random() > 0.8,
+              price: Math.random() > 0.8 ? 500 : 0, // Add a price for premium seats
+            })),
+          }));
+          setFlights(flightsWithSeats);
         } else {
           setFlights([]);
         }
@@ -85,6 +107,14 @@ const BookFlightPage = () => {
     };
     fetchFlights();
   }, [id]);
+
+  useEffect(() => {
+    if (selectedSeats.length > 0) {
+      setQuantity(selectedSeats.length);
+    } else {
+      setQuantity(1);
+    }
+  }, [selectedSeats]);
 
   if (loading) {
     return <Loader />;
@@ -116,32 +146,32 @@ const BookFlightPage = () => {
     discounts: -250,
   };
 
-    const hotels = [
-        {
-            name: "Hotel Park Tree",
-            rating: 4,
-            price: 9000,
-            image:
-                "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800",
-            location: "Near Airport, New Delhi",
-        },
-        {
-            name: "Lemon Tree Premier",
-            rating: 4,
-            price: 43875,
-            image:
-                "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800",
-            location: "Connaught Place, New Delhi",
-        },
-        {
-            name: "Hotel Kian",
-            rating: 4,
-            price: 1968,
-            image:
-                "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800",
-            location: "Karol Bagh, New Delhi",
-        },
-    ];
+  const hotels = [
+    {
+      name: "Hotel Park Tree",
+      rating: 4,
+      price: 9000,
+      image:
+        "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800",
+      location: "Near Airport, New Delhi",
+    },
+    {
+      name: "Lemon Tree Premier",
+      rating: 4,
+      price: 43875,
+      image:
+        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800",
+      location: "Connaught Place, New Delhi",
+    },
+    {
+      name: "Hotel Kian",
+      rating: 4,
+      price: 1968,
+      image:
+        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800",
+      location: "Karol Bagh, New Delhi",
+    },
+  ];
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return "N/A";
@@ -156,21 +186,6 @@ const BookFlightPage = () => {
     return date.toLocaleString("en-US", options);
   };
 
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const value = Number.parseInt(e.target.value);
-    setQuantity(
-      isNaN(value) ? 1 : Math.max(1, Math.min(value, flight.availableSeats))
-    );
-  };
-
-  const totalPrice = flight?.price * quantity;
-  const totalTaxes = fareSummary?.taxes * quantity;
-  const totalOtherServices = fareSummary?.otherServices * quantity;
-  const totalDiscounts = fareSummary?.discounts * quantity;
-  const grandTotal =
-    totalPrice + totalTaxes + totalOtherServices - totalDiscounts;
-
   const handlebooking = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -182,7 +197,7 @@ const BookFlightPage = () => {
       );
       const updateuser = {
         ...user,
-        bookings: [...(user.bookings || []), data],
+        bookings: [...(user.bookings || []), { ...data, selectedSeats }],
       };
       dispatch(setUser(updateuser));
       setopem(false);
@@ -193,118 +208,152 @@ const BookFlightPage = () => {
     }
   };
 
+  const premiumSeatsPrice = flight.seats
+    ? flight.seats
+        .filter(
+          (seat) => selectedSeats.includes(seat.seatNumber) && seat.isPremium
+        )
+        .reduce((acc, seat) => acc + seat.price, 0)
+    : 0;
+
+  const totalPrice = flight?.price * quantity + premiumSeatsPrice;
+  const totalTaxes = fareSummary?.taxes * quantity;
+  const totalOtherServices = fareSummary?.otherServices * quantity;
+  const totalDiscounts = fareSummary?.discounts * quantity;
+  const grandTotal =
+    totalPrice + totalTaxes + totalOtherServices - totalDiscounts;
+
   const BookingContent = () => (
     <DialogContent className="sm:max-w-[600px] bg-white">
-      <DialogHeader>
-        <DialogTitle className="text-2xl font-bold flex items-center">
-          <Plane className="w-6 h-6 mr-2" />
-          Flight Booking Details
-        </DialogTitle>
-      </DialogHeader>
-      <div className="grid gap-6 mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="text-black space-y-2">
-            <Label htmlFor="flightName" className="flex items-center">
-              <Plane className="w-4 h-4 mr-2" />
-              Flight Name
-            </Label>
-            <Input id="flightName" value={flight?.flightName} readOnly />
+      <ScrollArea className="max-h-[80vh]">
+        <DialogHeader className="p-6">
+          <DialogTitle className="text-2xl font-bold flex items-center">
+            <Plane className="w-6 h-6 mr-2" />
+            Flight Booking Details
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-6 mt-4 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="text-black space-y-2">
+              <Label htmlFor="flightName" className="flex items-center">
+                <Plane className="w-4 h-4 mr-2" />
+                Flight Name
+              </Label>
+              <Input id="flightName" value={flight?.flightName} readOnly />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="from" className="flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                From
+              </Label>
+              <Input id="from" value={flight?.from} readOnly />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="to" className="flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                To
+              </Label>
+              <Input id="to" value={flight?.to} readOnly />
+            </div>
+            <div className=" text-black space-y-2">
+              <Label htmlFor="departureTime" className="flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                Departure Time
+              </Label>
+              <Input
+                id="departureTime"
+                value={new Date(flight.departureTime).toLocaleString()}
+                readOnly
+              />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="arrivalTime" className="flex items-center">
+                <Clock className="w-4 h-4 mr-2" />
+                Arrival Time
+              </Label>
+              <Input
+                id="arrivalTime"
+                value={new Date(flight.arrivalTime).toLocaleString()}
+                readOnly
+              />
+            </div>
+            <div className="text-black space-y-2">
+              <Label htmlFor="quantity" className="flex items-center">
+                <Ticket className="w-4 h-4 mr-2" />
+                Number of Tickets
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                max={flight.availableSeats}
+                value={quantity}
+                readOnly // Make this read-only as it's now controlled by seat selection
+              />
+            </div>
           </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="from" className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2" />
-              From
-            </Label>
-            <Input id="from" value={flight?.from} readOnly />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="to" className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2" />
-              To
-            </Label>
-            <Input id="to" value={flight?.to} readOnly />
-          </div>
-          <div className=" text-black space-y-2">
-            <Label htmlFor="departureTime" className="flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Departure Time
-            </Label>
-            <Input
-              id="departureTime"
-              value={new Date(flight.departureTime).toLocaleString()}
-              readOnly
+          {flight.seats && (
+            <SeatSelection
+              seats={flight.seats}
+              onSeatsSelected={setSelectedSeats}
+              preferredSeatType={user?.preferredSeatType}
             />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="arrivalTime" className="flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              Arrival Time
-            </Label>
-            <Input
-              id="arrivalTime"
-              value={new Date(flight.arrivalTime).toLocaleString()}
-              readOnly
-            />
-          </div>
-          <div className="text-black space-y-2">
-            <Label htmlFor="quantity" className="flex items-center">
-              <Ticket className="w-4 h-4 mr-2" />
-              Number of Tickets
-            </Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              max={flight.availableSeats}
-              value={quantity}
-              onChange={handleQuantityChange}
-            />
-          </div>
-        </div>
-        <div className="bg-gray-100 rounded-lg p-4">
-          <h3 className="text-black font-bold mb-4 flex items-center">
-            <CreditCard className=" text-black w-5 h-5 mr-2" />
-            Fare Summary
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Base Fare</span>
-              <span className="text-black font-medium">
-                ₹ {totalPrice.toLocaleString()}
-              </span>
+          )}
+
+          {selectedSeats.length > 0 && (
+            <div className="bg-gray-100 rounded-lg p-4">
+              <h3 className="text-black font-bold mb-2">Selected Seats</h3>
+              <p className="text-black">{selectedSeats.join(", ")}</p>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Taxes and Surcharges</span>
-              <span className="text-black font-medium">
-                ₹ {totalTaxes.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Other Services</span>
-              <span className="text-black font-medium">
-                ₹ {totalOtherServices.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-green-600">
-              <span className="font-medium">Discounts</span>
-              <span className="font-medium">
-                - ₹ {Math.abs(totalDiscounts).toLocaleString()}
-              </span>
-            </div>
-            <div className="border-t pt-2 mt-2">
+          )}
+
+          <div className="bg-gray-100 rounded-lg p-4">
+            <h3 className="text-black font-bold mb-4 flex items-center">
+              <CreditCard className=" text-black w-5 h-5 mr-2" />
+              Fare Summary
+            </h3>
+            <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-black">Total Amount</span>
-                <span className="font-bold text-black">
-                  ₹ {grandTotal.toLocaleString()}
+                <span className="text-gray-600">Base Fare</span>
+                <span className="text-black font-medium">
+                  ₹ {totalPrice.toLocaleString()}
                 </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Taxes and Surcharges</span>
+                <span className="text-black font-medium">
+                  ₹ {totalTaxes.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Other Services</span>
+                <span className="text-black font-medium">
+                  ₹ {totalOtherServices.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-green-600">
+                <span className="font-medium">Discounts</span>
+                <span className="font-medium">
+                  - ₹ {Math.abs(totalDiscounts).toLocaleString()}
+                </span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-black">Total Amount</span>
+                  <span className="font-bold text-black">
+                    ₹ {grandTotal.toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <Button className="w-full mt-4" onClick={handlebooking}>
-        Proceed to Payment
-      </Button>
+        <div className="p-6">
+          <Button className="w-full" onClick={handlebooking}>
+            Proceed to Payment
+          </Button>
+        </div>
+      </ScrollArea>
     </DialogContent>
   );
   return (

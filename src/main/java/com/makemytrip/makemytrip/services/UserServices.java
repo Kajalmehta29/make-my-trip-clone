@@ -41,10 +41,11 @@ public class UserServices{
             user.setFirstName(updatedUser.getFirstName());
             user.setLastName(updatedUser.getLastName());
             user.setPhoneNumber(updatedUser.getPhoneNumber());
+            // Add these lines to update preferences
+            user.setPreferredSeatType(updatedUser.getPreferredSeatType());
+            user.setPreferredRoomType(updatedUser.getPreferredRoomType());
             return userRepository.save(user);
         }
         return null;
     }
-
-
 }

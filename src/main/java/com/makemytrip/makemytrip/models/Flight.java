@@ -19,6 +19,7 @@ public class Flight {
     private int availableSeats;
     private String cancellationPolicy;
     private List<Review> reviews = new ArrayList<>();
+    private List<Seat> seats = new ArrayList<>(); // Add this line
 
     // Getters and Setters
     public String getFlightNumber() {
@@ -28,7 +29,7 @@ public class Flight {
     public void setFlightNumber(String flightNumber) {
         this.flightNumber = flightNumber;
     }
-    
+
     public List<Review> getReviews() {
         return reviews;
     }
@@ -107,5 +108,13 @@ public class Flight {
 
     public void setAvailableSeats(int availableSeats) {
         this.availableSeats = availableSeats;
+    }
+
+    public List<Seat> getSeats() {
+        return seats;
+    }
+
+    public void setSeats(List<Seat> seats) {
+        this.seats = seats;
     }
 }

@@ -16,6 +16,7 @@ public class Hotel {
     private String amenities;
     private String cancellationPolicy;
     private List<Review> reviews = new ArrayList<>();
+    private List<RoomType> roomTypes = new ArrayList<>(); // Add this line
 
     // Getters and Setters
     public List<Review> getReviews() {
@@ -80,5 +81,13 @@ public class Hotel {
 
     public void setPricePerNight(double pricePerNight) {
         this.pricePerNight = pricePerNight;
+    }
+
+    public List<RoomType> getRoomTypes() {
+        return roomTypes;
+    }
+
+    public void setRoomTypes(List<RoomType> roomTypes) {
+        this.roomTypes = roomTypes;
     }
 }

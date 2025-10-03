@@ -50,7 +50,9 @@ export const editprofile = async (
   firstName,
   lastName,
   email,
-  phoneNumber
+  phoneNumber,
+  preferredSeatType,
+  preferredRoomType
 ) => {
   try {
     const res = await axios.post(`${BACKEND_URL}/user/edit?id=${id}`, {
@@ -58,6 +60,8 @@ export const editprofile = async (
       lastName,
       email,
       phoneNumber,
+      preferredSeatType,
+      preferredRoomType,
     });
     const data = res.data;
     return data;
@@ -307,5 +311,3 @@ export const getFlightStatus = async (flightNumber) => {
     throw error;
   }
 };
-
-
