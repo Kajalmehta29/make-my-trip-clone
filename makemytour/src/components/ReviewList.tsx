@@ -21,7 +21,7 @@ interface ReviewData {
   imageUrls?: string[];
   replies?: ReplyData[];
   isFlagged: boolean;
-  helpfulUserIds: string[]; // Changed to an array of user IDs
+  helpfulUserIds: string[];
   createdAt: string;
 }
 
@@ -43,7 +43,6 @@ const ReviewList: React.FC<ReviewListProps> = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
-  // This effect ensures that if the parent component passes new reviews, our state updates.
   useEffect(() => {
     setReviews(initialReviews || []);
   }, [initialReviews]);
@@ -54,14 +53,13 @@ const ReviewList: React.FC<ReviewListProps> = ({
       return;
     }
 
-    // Optimistically update the UI for immediate user feedback
     setReviews((currentReviews) =>
       currentReviews.map((review) => {
         if (review.id === reviewId) {
           const alreadyLiked = review.helpfulUserIds?.includes(user.id);
           const newHelpfulUserIds = alreadyLiked
-            ? review.helpfulUserIds.filter((id) => id !== user.id) // Unlike
-            : [...(review.helpfulUserIds || []), user.id]; // Like
+            ? review.helpfulUserIds.filter((id) => id !== user.id)
+            : [...(review.helpfulUserIds || []), user.id];
           return {
             ...review,
             helpfulUserIds: newHelpfulUserIds,
@@ -75,9 +73,7 @@ const ReviewList: React.FC<ReviewListProps> = ({
       await markHelpful(productId, reviewId, type, user.id);
     } catch (error) {
       console.error("Failed to mark review as helpful:", error);
-      // If the API call fails, revert the UI change to its original state
       setReviews(initialReviews);
-      alert("Could not update helpful count. Please try again.");
     }
   };
 
@@ -95,8 +91,6 @@ const ReviewList: React.FC<ReviewListProps> = ({
       await addReply(productId, reviewId, type, reply);
       setReplyingTo(null);
       setReplyText("");
-      // Ideally, you would refetch the reviews from the server here to see the new reply.
-      // For now, an alert informs the user.
       alert("Reply posted successfully! Refresh the page to see your reply.");
     } catch (error) {
       console.error("Failed to post reply:", error);
@@ -107,7 +101,6 @@ const ReviewList: React.FC<ReviewListProps> = ({
     if (confirm("Are you sure you want to flag this review as inappropriate?")) {
       try {
         await flagReview(productId, reviewId, type);
-        // Optimistically update the UI to show the flagged state
         setReviews((currentReviews) =>
           currentReviews.map((review) =>
             review.id === reviewId ? { ...review, isFlagged: true } : review
@@ -120,7 +113,6 @@ const ReviewList: React.FC<ReviewListProps> = ({
     }
   };
 
-  // Sort reviews based on the selected criteria
   const sortedReviews = [...reviews].sort((a, b) => {
     const countA = a.helpfulUserIds?.length || 0;
     const countB = b.helpfulUserIds?.length || 0;
@@ -128,7 +120,6 @@ const ReviewList: React.FC<ReviewListProps> = ({
     if (sortBy === "helpful") {
       return countB - countA;
     }
-    // Default to sorting by newest
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
@@ -176,6 +167,7 @@ const ReviewList: React.FC<ReviewListProps> = ({
                   {review.userName}
                 </p>
               </div>
+              {/* FIX: This line displays the review comment */}
               <p className="text-gray-700 mb-4">{review.comment}</p>
 
               <div className="flex space-x-2 mt-4">

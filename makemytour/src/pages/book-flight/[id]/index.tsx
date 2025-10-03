@@ -463,7 +463,7 @@ const BookFlightPage = () => {
               <h2 className="text-2xl text-black font-bold mb-2">
                 Ratings & Reviews
               </h2>
-              <div className="flex items-center mb-6">
+              <div className="flex text-black items-center mb-6">
                 <Star className="w-6 h-6 text-yellow-400 fill-current mr-2" />
                 <span className="text-xl font-bold text-black">
                   {averageRating}
@@ -473,7 +473,7 @@ const BookFlightPage = () => {
                 </span>
               </div>
               <ReviewList
-                reviews={flight.reviews ?? []}
+                reviews={flight.reviews}
                 user={user}
                 productId={flight.id}
                 type="Flight"

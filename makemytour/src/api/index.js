@@ -299,5 +299,13 @@ export const markHelpful = async (productId, reviewId, type, userId) => {
     throw error;
   }
 };
+export const getFlightStatus = async (flightNumber) => {
+  try {
+    const res = await axios.get(`${BACKEND_URL}/flight-status/${flightNumber}`);
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 

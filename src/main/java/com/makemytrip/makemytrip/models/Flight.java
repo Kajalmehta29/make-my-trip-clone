@@ -10,6 +10,7 @@ public class Flight {
     @Id
     private String _id;
     private String flightName;
+    private String flightNumber; // New Field
     private String from;
     private String to;
     private String departureTime;
@@ -20,6 +21,14 @@ public class Flight {
     private List<Review> reviews = new ArrayList<>();
 
     // Getters and Setters
+    public String getFlightNumber() {
+        return flightNumber;
+    }
+
+    public void setFlightNumber(String flightNumber) {
+        this.flightNumber = flightNumber;
+    }
+    
     public List<Review> getReviews() {
         return reviews;
     }

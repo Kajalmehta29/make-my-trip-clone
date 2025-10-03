@@ -13,18 +13,10 @@ import {
   Ticket,
   Home,
   Calendar,
+  AlertCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { gethotel, handlehotelbooking } from "@/api";
-interface Hotel {
-  id: string;
-  hotelName: string;
-  location: string;
-  pricePerNight: number;
-  availableRooms: number;
-  amenities: string;
-  cancellationPolicy: string;
-}
 import {
   Dialog,
   DialogContent,
@@ -39,6 +31,33 @@ import { useDispatch, useSelector } from "react-redux";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+import CancellationPolicy from "@/components/CancellationPolicy";
+import ReviewList from "@/components/ReviewList";
+
+// Define TypeScript interfaces for type safety
+interface Review {
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  helpfulCount: number;
+  imageUrls?: string[];
+  replies?: any[];
+  isFlagged: boolean;
+  helpfulUserIds: string[];
+}
+
+interface Hotel {
+  id: string;
+  hotelName: string;
+  location: string;
+  pricePerNight: number;
+  availableRooms: number;
+  amenities: string;
+  cancellationPolicy: string;
+  reviews: Review[]; // This line fixes the error
+}
 
 const BookHotelPage = () => {
   const [quantity, setQuantity] = useState(1);
@@ -53,10 +72,15 @@ const BookHotelPage = () => {
 
   useEffect(() => {
     const fetchhotels = async () => {
+      if (!id) return;
       try {
         const data = await gethotel();
-        const filteredData = data.filter((hotel: any) => hotel.id === id);
-        sethotels(filteredData);
+        if (Array.isArray(data)) {
+          const filteredData = data.filter((hotel: any) => hotel.id === id);
+          sethotels(filteredData);
+        } else {
+          sethotels([]);
+        }
       } catch (error) {
         console.error("Error fetching hotels:", error);
       } finally {
@@ -75,6 +99,15 @@ const BookHotelPage = () => {
   }
 
   const hotel = hotels[0];
+
+  const averageRating =
+    hotel.reviews && hotel.reviews.length > 0
+      ? (
+          hotel.reviews.reduce((acc, review) => acc + review.rating, 0) /
+          hotel.reviews.length
+        ).toFixed(1)
+      : "No ratings";
+
   const hotelData = {
     rating: 3,
     maxRating: 5,
@@ -99,12 +132,8 @@ const BookHotelPage = () => {
       ],
       taxes: 527,
     },
-    reviews: {
-      rating: 3.8,
-      count: 784,
-      text: "Very Good",
-    },
   };
+
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     const value = Number.parseInt(e.target.value);
@@ -116,6 +145,7 @@ const BookHotelPage = () => {
   const totalPrice = hotel?.pricePerNight * quantity;
   const totalTaxes = hotelData?.room.taxes * quantity;
   const grandTotal = totalPrice + totalTaxes;
+
   const handlebooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkInDate) {
@@ -132,7 +162,7 @@ const BookHotelPage = () => {
       );
       const updateuser = {
         ...user,
-        bookings: [...user.bookings, data],
+        bookings: [...(user.bookings || []), data],
       };
       dispatch(setUser(updateuser));
       setopem(false);
@@ -142,6 +172,7 @@ const BookHotelPage = () => {
       console.log(error);
     }
   };
+
   const HotelContent = () => (
     <DialogContent className="sm:max-w-[600px] bg-white">
       <DialogHeader>
@@ -266,90 +297,114 @@ const BookHotelPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="mb-6">
-              <h1 className="text-2xl text-black font-bold mb-2">
-                {hotel.hotelName}
-              </h1>
-              <div className="flex items-center space-x-1">
-                {[...Array(hotelData.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 text-yellow-400 fill-current"
-                  />
-                ))}
-                {[...Array(hotelData.maxRating - hotelData.rating)].map(
-                  (_, i) => (
-                    <Star key={i} className="w-5 h-5 text-gray-300" />
-                  )
-                )}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="mb-6">
+                <h1 className="text-2xl text-black font-bold mb-2">
+                  {hotel.hotelName}
+                </h1>
+                <div className="flex items-center space-x-1">
+                  {[...Array(hotelData.rating)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className="w-5 h-5 text-yellow-400 fill-current"
+                    />
+                  ))}
+                  {[...Array(hotelData.maxRating - hotelData.rating)].map(
+                    (_, i) => (
+                      <Star key={i} className="w-5 h-5 text-gray-300" />
+                    )
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="col-span-2 relative group cursor-pointer">
-                <img
-                  src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800"
-                  alt="Hotel Main"
-                  className="w-full h-80 object-cover rounded-lg"
-                />
-                <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full flex items-center space-x-1">
-                  <Camera className="w-4 h-4 text-black" />
-                  <span className="text-sm text-black">
-                    +{hotelData.propertyPhotos} Property Photos
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="relative group cursor-pointer">
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="col-span-2 relative group cursor-pointer">
                   <img
-                    src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800"
-                    alt="Hotel Room"
-                    className="w-full h-[152px] object-cover rounded-lg"
-                  />
-                </div>
-                <div className="relative group cursor-pointer">
-                  <img
-                    src="https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=800"
-                    alt="Hotel Amenity"
-                    className="w-full h-[152px] object-cover rounded-lg"
+                    src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800"
+                    alt="Hotel Main"
+                    className="w-full h-80 object-cover rounded-lg"
                   />
                   <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full flex items-center space-x-1">
-                    <Image className="w-4 h-4 text-black" />
+                    <Camera className="w-4 h-4 text-black" />
                     <span className="text-sm text-black">
-                      +{hotelData.guestPhotos} Guest Photos
+                      +{hotelData.propertyPhotos} Property Photos
                     </span>
                   </div>
                 </div>
+                <div className="space-y-4">
+                  <div className="relative group cursor-pointer">
+                    <img
+                      src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800"
+                      alt="Hotel Room"
+                      className="w-full h-[152px] object-cover rounded-lg"
+                    />
+                  </div>
+                  <div className="relative group cursor-pointer">
+                    <img
+                      src="https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=800"
+                      alt="Hotel Amenity"
+                      className="w-full h-[152px] object-cover rounded-lg"
+                    />
+                    <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full flex items-center space-x-1">
+                      <Image className="w-4 h-4 text-black" />
+                      <span className="text-sm text-black">
+                        +{hotelData.guestPhotos} Guest Photos
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-gray-600 mb-6">
+                {hotelData.description}
+                <button className="text-blue-500 ml-2">Read more</button>
+              </p>
+
+              <div className="mb-8">
+                <h2 className="text-xl text-black font-semibold mb-4">
+                  Amenities
+                </h2>
+                <div className="flex flex-wrap gap-6">
+                  {hotelData.amenities.map((amenity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center space-x-2 text-gray-600"
+                    >
+                      {amenity.icon}
+                      <span>{amenity.name}</span>
+                    </div>
+                  ))}
+                  <button className="text-blue-500">+ 31 Amenities</button>
+                </div>
               </div>
             </div>
 
-            <p className="text-gray-600 mb-6">
-              {hotelData.description}
-              <button className="text-blue-500 ml-2">Read more</button>
-            </p>
-
-            <div className="mb-8">
-              <h2 className="text-xl text-black font-semibold mb-4">
-                Amenities
+            {/* Reviews Section */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <h2 className="text-2xl text-black font-bold mb-2">
+                Ratings & Reviews
               </h2>
-              <div className="flex flex-wrap gap-6">
-                {hotelData.amenities.map((amenity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-2 text-gray-600"
-                  >
-                    {amenity.icon}
-                    <span>{amenity.name}</span>
-                  </div>
-                ))}
-                <button className="text-blue-500">+ 31 Amenities</button>
+              <div className="flex items-center mb-6">
+                <Star className="w-6 h-6 text-yellow-400 fill-current mr-2" />
+                <span className="text-xl font-bold text-black">
+                  {averageRating}
+                </span>
+                <span className="text-gray-500 ml-2">
+                  ({hotel.reviews?.length || 0} reviews)
+                </span>
               </div>
+              <ReviewList
+                reviews={hotel.reviews}
+                user={user}
+                productId={hotel.id}
+                type="Hotel"
+              />
             </div>
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
               <h3 className="text-xl text-black font-semibold mb-4">
                 {hotelData.room.type}
               </h3>
@@ -372,7 +427,6 @@ const BookHotelPage = () => {
                     ₹ {totalPrice}
                   </span>
                 </div>
-
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-gray-800 font-semibold">
                     Available Rooms:
@@ -381,14 +435,12 @@ const BookHotelPage = () => {
                     {hotel.availableRooms}
                   </span>
                 </div>
-
                 <div>
                   <h4 className="text-gray-800 font-semibold mb-2">
                     Amenities:
                   </h4>
                   <p className="text-gray-600">{hotel.amenities}</p>
                 </div>
-
                 <div className="mt-4">
                   <h4 className="text-gray-800 font-semibold mb-2">
                     Cancellation Policy:
@@ -432,42 +484,6 @@ const BookHotelPage = () => {
                   </DialogContent>
                 )}
               </Dialog>
-
-              <button className="w-full text-blue-500 text-center">
-                14 More Options
-              </button>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-500 text-white text-2xl font-bold w-16 h-16 rounded-lg flex items-center justify-center">
-                    {hotelData.reviews.rating}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-black text-lg">
-                      {hotelData.reviews.text}
-                    </div>
-                    <div className="text-gray-500">
-                      ({hotelData.reviews.count} ratings)
-                    </div>
-                  </div>
-                </div>
-                <a href="#" className="text-blue-500">
-                  All Reviews
-                </a>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-black text-lg mb-1">
-                    {hotel.location}
-                  </h3>
-                </div>
-                <button className="text-blue-500">See on Map</button>
-              </div>
             </div>
           </div>
         </div>

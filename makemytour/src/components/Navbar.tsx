@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link"; // Import Link
 import SignupDialog from "./SignupDialog";
 import { LogOut, Plane, User } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,6 +15,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { clearUser } from "@/store";
 import { useRouter } from "next/navigation";
+
 const Navbar = () => {
   const dispatch = useDispatch();
   const user = useSelector((state: any) => state.user.user);
@@ -24,11 +26,18 @@ const Navbar = () => {
   return (
     <header className="bg-white backdrop-blur-md py-4 sticky top-0 z-50">
       <div className=" container mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2 text-white">
+        <Link href="/" className="flex items-center space-x-2 text-white">
           <Plane className="w-8 h-8 text-red-500" />
           <span className="text-2xl font-bold text-black">MakeMyTour</span>
-        </div>
+        </Link>
         <div className="flex items-center space-x-4">
+          {/* New Flight Status Link */}
+          <Link href="/flight-status" passHref>
+            <Button variant="ghost" className="text-black">
+              Flight Status
+            </Button>
+          </Link>
+
           {user ? (
             <>
               {user.role === "ADMIN" && (
