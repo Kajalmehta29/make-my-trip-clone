@@ -7,7 +7,6 @@ export const login = async (email, password) => {
     const url = `${BACKEND_URL}/user/login?email=${email}&password=${password}`;
     const res = await axios.post(url);
     const data = res.data;
-    // console.log(data);
     return data;
   } catch (error) {
     throw error;
@@ -30,7 +29,6 @@ export const signup = async (
       password,
     });
     const data = res.data;
-    // console.log(data);
     return data;
   } catch (error) {
     throw error;
@@ -63,7 +61,9 @@ export const editprofile = async (
     });
     const data = res.data;
     return data;
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+  }
 };
 export const getflight = async () => {
   try {
@@ -71,7 +71,7 @@ export const getflight = async () => {
     const data = res.data;
     return data;
   } catch (error) {
-    console.log(data);
+    console.log(error);
   }
 };
 
@@ -134,7 +134,7 @@ export const gethotel = async () => {
     const data = res.data;
     return data;
   } catch (error) {
-    console.log(data);
+    console.log(error);
   }
 };
 
@@ -194,9 +194,15 @@ export const handleflightbooking = async (userId, flightId, seats, price) => {
   }
 };
 
-export const handlehotelbooking = async (userId, hotelId, rooms, price) => {
+export const handlehotelbooking = async (
+  userId,
+  hotelId,
+  rooms,
+  price,
+  checkInDate
+) => {
   try {
-    const url = `${BACKEND_URL}/booking/flight?userId=${userId}&hotelId=${hotelId}&rooms=${rooms}&price=${price}`;
+    const url = `${BACKEND_URL}/booking/hotel?userId=${userId}&hotelId=${hotelId}&rooms=${rooms}&price=${price}&checkInDate=${checkInDate}`;
     const res = await axios.post(url);
     const data = res.data;
     return data;
@@ -204,11 +210,94 @@ export const handlehotelbooking = async (userId, hotelId, rooms, price) => {
     console.log(error);
   }
 };
+
 export const cancelBooking = async (userId, bookingId, cancellationReason) => {
   try {
-    const res = await axios.post(`${BACKEND_URL}/booking/cancel?userId=${userId}&bookingId=${bookingId}&cancellationReason=${cancellationReason}`);
+    const res = await axios.post(
+      `${BACKEND_URL}/booking/cancel?userId=${userId}&bookingId=${bookingId}&cancellationReason=${cancellationReason}`
+    );
     return res.data;
   } catch (error) {
     throw error;
   }
 };
+export const addFlightReview = async (flightId, review) => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/review/flight/${flightId}`,
+      review
+    );
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addHotelReview = async (hotelId, review) => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/review/hotel/${hotelId}`,
+      review
+    );
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const res = await axios.post(`${BACKEND_URL}/admin/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addReply = async (productId, reviewId, type, reply) => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/review/${productId}/${reviewId}/reply?type=${type}`,
+      reply
+    );
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const flagReview = async (productId, reviewId, type) => {
+  try {
+    const res = await axios.post(`${BACKEND_URL}/admin/review/flag`, {
+      productId,
+      reviewId,
+      type,
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Marks a review as helpful.
+ * This is the new function.
+ */
+export const markHelpful = async (productId, reviewId, type, userId) => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/review/${productId}/${reviewId}/helpful?type=${type}`,
+      { userId } // Send userId in the request body
+    );
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+

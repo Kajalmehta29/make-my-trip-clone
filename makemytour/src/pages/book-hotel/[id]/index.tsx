@@ -11,18 +11,19 @@ import {
   Image,
   CreditCard,
   Ticket,
-  Plane,
   Home,
+  Calendar,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { gethotel, handlehotelbooking } from "@/api";
 interface Hotel {
-  id: string; // Unique identifier for the hotel
-  hotelName: string; // Name of the hotel
-  location: string; // Location of the hotel
-  pricePerNight: number; // Price per night
-  availableRooms: number; // Number of available rooms
-  amenities: string; // Amenities provided (comma-separated string or change to string[])
+  id: string;
+  hotelName: string;
+  location: string;
+  pricePerNight: number;
+  availableRooms: number;
+  amenities: string;
+  cancellationPolicy: string;
 }
 import {
   Dialog,
@@ -38,15 +39,18 @@ import { useDispatch, useSelector } from "react-redux";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+
 const BookHotelPage = () => {
   const [quantity, setQuantity] = useState(1);
   const router = useRouter();
-  const { id } = router.query; // Access the hotel ID from the URL
+  const { id } = router.query;
   const [hotels, sethotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useSelector((state: any) => state.user.user);
   const [open, setopem] = useState(false);
   const dispatch = useDispatch();
+  const [checkInDate, setCheckInDate] = useState("");
+
   useEffect(() => {
     const fetchhotels = async () => {
       try {
@@ -54,20 +58,24 @@ const BookHotelPage = () => {
         const filteredData = data.filter((hotel: any) => hotel.id === id);
         sethotels(filteredData);
       } catch (error) {
-        console.error("Error fetching flights:", error);
+        console.error("Error fetching hotels:", error);
       } finally {
         setLoading(false);
       }
     };
     fetchhotels();
-  }, []);
+  }, [id]);
 
   if (loading) {
     return <Loader />;
   }
+
+  if (hotels.length === 0) {
+    return <div>No hotel data available for this ID.</div>;
+  }
+
   const hotel = hotels[0];
   const hotelData = {
-    name: "Magnum Resorts- Near Candolim Beach",
     rating: 3,
     maxRating: 5,
     propertyPhotos: 91,
@@ -89,13 +97,7 @@ const BookHotelPage = () => {
         "Complimentary welcome drinks on arrival",
         "Non-Refundable",
       ],
-      originalPrice: 8999,
-      discountedPrice: 664,
       taxes: 527,
-    },
-    location: {
-      area: "Candolim",
-      distance: "7 minutes walk to Candolim Beach",
     },
     reviews: {
       rating: 3.8,
@@ -113,16 +115,20 @@ const BookHotelPage = () => {
 
   const totalPrice = hotel?.pricePerNight * quantity;
   const totalTaxes = hotelData?.room.taxes * quantity;
-  const totalDiscounts = hotelData?.room.discountedPrice * quantity;
-  const grandTotal = totalPrice + totalTaxes - totalDiscounts;
+  const grandTotal = totalPrice + totalTaxes;
   const handlebooking = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!checkInDate) {
+      alert("Please select a check-in date.");
+      return;
+    }
     try {
       const data = await handlehotelbooking(
         user?.id,
         hotel?.id,
         quantity,
-        grandTotal
+        grandTotal,
+        checkInDate
       );
       const updateuser = {
         ...user,
@@ -146,7 +152,6 @@ const BookHotelPage = () => {
       </DialogHeader>
       <div className="grid gap-6 mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Hotel Name */}
           <div className="text-black space-y-2">
             <Label htmlFor="hotelName" className="flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
@@ -154,8 +159,6 @@ const BookHotelPage = () => {
             </Label>
             <Input id="hotelName" value={hotel.hotelName} readOnly />
           </div>
-
-          {/* Location */}
           <div className="text-black space-y-2">
             <Label htmlFor="location" className="flex items-center">
               <MapPin className="w-4 h-4 mr-2" />
@@ -163,7 +166,6 @@ const BookHotelPage = () => {
             </Label>
             <Input id="location" value={hotel.location} readOnly />
           </div>
-          {/* Price Per Night */}
           <div className="text-black space-y-2">
             <Label htmlFor="pricePerNight" className="flex items-center">
               <Ticket className="w-4 h-4 mr-2" />
@@ -175,8 +177,6 @@ const BookHotelPage = () => {
               readOnly
             />
           </div>
-
-          {/* Available Rooms */}
           <div className="text-black space-y-2">
             <Label htmlFor="availableRooms" className="flex items-center">
               <Ticket className="w-4 h-4 mr-2" />
@@ -184,8 +184,6 @@ const BookHotelPage = () => {
             </Label>
             <Input id="availableRooms" value={hotel.availableRooms} readOnly />
           </div>
-
-          {/* Number of Rooms to Book */}
           <div className="text-black space-y-2">
             <Label htmlFor="quantity" className="flex items-center">
               <Ticket className="w-4 h-4 mr-2" />
@@ -198,6 +196,18 @@ const BookHotelPage = () => {
               max={hotel.availableRooms}
               value={quantity}
               onChange={handleQuantityChange}
+            />
+          </div>
+          <div className="text-black space-y-2">
+            <Label htmlFor="checkInDate" className="flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              Check-in Date
+            </Label>
+            <Input
+              id="checkInDate"
+              type="date"
+              value={checkInDate}
+              onChange={(e) => setCheckInDate(e.target.value)}
             />
           </div>
         </div>
@@ -219,12 +229,6 @@ const BookHotelPage = () => {
                 ₹ {totalTaxes.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between items-center text-green-600">
-              <span className="font-medium">Discounts</span>
-              <span className="font-medium">
-                - ₹ {Math.abs(totalDiscounts).toLocaleString()}
-              </span>
-            </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-black">Total Amount</span>
@@ -236,12 +240,14 @@ const BookHotelPage = () => {
           </div>
         </div>
       </div>
-      <Button className="w-full mt-4" onClick={handlebooking}>Proceed to Payment</Button>
+      <Button className="w-full mt-4" onClick={handlebooking}>
+        Proceed to Payment
+      </Button>
     </DialogContent>
   );
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center space-x-2 text-sm">
@@ -260,11 +266,11 @@ const BookHotelPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Hotel Title & Rating */}
             <div className="mb-6">
-              <h1 className="text-2xl text-black font-bold mb-2">{hotel.hotelName}</h1>
+              <h1 className="text-2xl text-black font-bold mb-2">
+                {hotel.hotelName}
+              </h1>
               <div className="flex items-center space-x-1">
                 {[...Array(hotelData.rating)].map((_, i) => (
                   <Star
@@ -280,7 +286,6 @@ const BookHotelPage = () => {
               </div>
             </div>
 
-            {/* Image Gallery */}
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="col-span-2 relative group cursor-pointer">
                 <img
@@ -290,7 +295,7 @@ const BookHotelPage = () => {
                 />
                 <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full flex items-center space-x-1">
                   <Camera className="w-4 h-4 text-black" />
-                  <span className="text-sm text-black" >
+                  <span className="text-sm text-black">
                     +{hotelData.propertyPhotos} Property Photos
                   </span>
                 </div>
@@ -319,15 +324,15 @@ const BookHotelPage = () => {
               </div>
             </div>
 
-            {/* Description */}
             <p className="text-gray-600 mb-6">
               {hotelData.description}
               <button className="text-blue-500 ml-2">Read more</button>
             </p>
 
-            {/* Amenities */}
             <div className="mb-8">
-              <h2 className="text-xl text-black font-semibold mb-4">Amenities</h2>
+              <h2 className="text-xl text-black font-semibold mb-4">
+                Amenities
+              </h2>
               <div className="flex flex-wrap gap-6">
                 {hotelData.amenities.map((amenity, index) => (
                   <div
@@ -343,7 +348,6 @@ const BookHotelPage = () => {
             </div>
           </div>
 
-          {/* Booking Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl text-black font-semibold mb-4">
@@ -360,7 +364,6 @@ const BookHotelPage = () => {
                 ))}
               </ul>
               <div className="mb-6">
-                {/* Price Per Night */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-800 font-semibold">
                     Price Per Night:
@@ -370,7 +373,6 @@ const BookHotelPage = () => {
                   </span>
                 </div>
 
-                {/* Available Rooms */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-gray-800 font-semibold">
                     Available Rooms:
@@ -380,12 +382,18 @@ const BookHotelPage = () => {
                   </span>
                 </div>
 
-                {/* Amenities */}
                 <div>
                   <h4 className="text-gray-800 font-semibold mb-2">
                     Amenities:
                   </h4>
                   <p className="text-gray-600">{hotel.amenities}</p>
+                </div>
+
+                <div className="mt-4">
+                  <h4 className="text-gray-800 font-semibold mb-2">
+                    Cancellation Policy:
+                  </h4>
+                  <p className="text-gray-600">{hotel.cancellationPolicy}</p>
                 </div>
               </div>
               <div className="space-y-2 mb-6">
@@ -430,7 +438,6 @@ const BookHotelPage = () => {
               </button>
             </div>
 
-            {/* Rating Card */}
             <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
@@ -452,7 +459,6 @@ const BookHotelPage = () => {
               </div>
             </div>
 
-            {/* Location Card */}
             <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
               <div className="flex items-start justify-between">
                 <div>

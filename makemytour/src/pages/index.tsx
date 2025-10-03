@@ -34,19 +34,7 @@ export default function Home() {
   const [flight, setflight] = useState<any[]>([]);
   const user = useSelector((state: any) => state.user.user);
   const router = useRouter();
-  const flightD = [
-    { id: 1, from: "Delhi", to: "Mumbai", date: "2025-01-15", price: 5000 },
-    { id: 2, from: "Mumbai", to: "Bengaluru", date: "2025-01-16", price: 4500 },
-    { id: 3, from: "Bengaluru", to: "Delhi", date: "2025-01-17", price: 5500 },
-    { id: 4, from: "Delhi", to: "Kolkata", date: "2025-01-18", price: 6000 },
-  ];
 
-  const hotelData = [
-    { id: 1, name: "Luxury Palace", city: "Mumbai", price: 15000 },
-    { id: 2, name: "Comfort Inn", city: "Delhi", price: 8000 },
-    { id: 3, name: "Seaside Resort", city: "Goa", price: 12000 },
-    { id: 4, name: "Mountain View Hotel", city: "Shimla", price: 10000 },
-  ];
   const offers = [
     {
       title: "Domestic Flights",
@@ -121,10 +109,10 @@ export default function Home() {
   useEffect(() => {
     const fetchdata = async () => {
       try {
-        const data = await gethotel();
-        sethotel(data);
-        const flightdata = await getflight();
-        setflight(flightdata);
+        const hotelData = await gethotel();
+        const flightData = await getflight();
+        sethotel(hotelData || []);
+        setflight(flightData || []);
       } catch (error) {
         console.error(error);
       } finally {
@@ -133,17 +121,21 @@ export default function Home() {
     };
 
     fetchdata();
-  }, [user]);
+  }, []);
 
   const cityOptions = useMemo(() => {
     const cities = new Set<string>();
-    flight.forEach((flight) => {
-      cities.add(flight.from);
-      cities.add(flight.to);
-    });
-    hotel.forEach((hotel) => {
-      cities.add(hotel.location);
-    });
+    if (Array.isArray(flight)) {
+      flight.forEach((flight) => {
+        cities.add(flight.from);
+        cities.add(flight.to);
+      });
+    }
+    if (Array.isArray(hotel)) {
+      hotel.forEach((hotel) => {
+        cities.add(hotel.location);
+      });
+    }
     return Array.from(cities).map((city) => ({ value: city, label: city }));
   }, [flight, hotel]);
 
@@ -425,7 +417,9 @@ const DownloadApp = () => {
     <div className="bg-white p-6 rounded-lg shadow-md max-w-7xl mx-auto my-12">
       <div className="flex flex-col md:flex-row items-center justify-between">
         <div className="mb-6 md:mb-0">
-          <h3 className="text-xl text-black font-bold mb-2">Download App Now!</h3>
+          <h3 className="text-xl text-black font-bold mb-2">
+            Download App Now!
+          </h3>
           <p className="text-gray-600 mb-4">
             Get India's #1 travel super app with best deals on flights
           </p>

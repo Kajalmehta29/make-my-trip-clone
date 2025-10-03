@@ -1,9 +1,12 @@
 package com.makemytrip.makemytrip.models;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.UUID;
+
 @Document(collection = "users")
 public class Users {
     @Id
@@ -14,41 +17,70 @@ public class Users {
     private String password;
     private String role;
     private String phoneNumber;
-    private List<Booking> bookings = new ArrayList<>();;
+    private List<Booking> bookings = new ArrayList<>();
 
+    public String getFirstName() {
+        return firstName;
+    }
 
-    public String getFirstName() {return firstName;}
     public String getId() {
         return _id;
     }
+
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
+
     public String getLastName() {
         return lastName;
     }
+
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
     public String getPhoneNumber() {
         return phoneNumber;
     }
-    public String getPassword() {return password;}
-    public String getEmail() {return email;}
-    public String getRole() {return role;}
-    public void setPassword(String password) {this.password = password;}
-    public void setRole(String role) {this.role = role;}
-    public List<Booking> getBookings(){return bookings;}
-    public void setBookings(List<Booking> bookings){this.bookings=bookings;}
 
+    public String getPassword() {
+        return password;
+    }
 
-    public static class Booking{
-        private String type;
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public List<Booking> getBookings() {
+        return bookings;
+    }
+
+    public void setBookings(List<Booking> bookings) {
+        this.bookings = bookings;
+    }
+
+    public static class Booking {
         private String bookingId;
+        private String productId;
+        private String type;
         private String date;
+        private String checkInDate; // New field for hotels
         private int quantity;
         private double totalPrice;
         private boolean cancelled;
@@ -56,15 +88,11 @@ public class Users {
         private double refundAmount;
         private String refundStatus;
 
+        public Booking() {
+            this.bookingId = UUID.randomUUID().toString();
+        }
+
         // Getters and Setters
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
         public String getBookingId() {
             return bookingId;
         }
@@ -73,12 +101,36 @@ public class Users {
             this.bookingId = bookingId;
         }
 
+        public String getProductId() {
+            return productId;
+        }
+
+        public void setProductId(String productId) {
+            this.productId = productId;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
         public String getDate() {
             return date;
         }
 
         public void setDate(String date) {
             this.date = date;
+        }
+
+        public String getCheckInDate() {
+            return checkInDate;
+        }
+
+        public void setCheckInDate(String checkInDate) {
+            this.checkInDate = checkInDate;
         }
 
         public int getQuantity() {
@@ -96,6 +148,7 @@ public class Users {
         public void setTotalPrice(double totalPrice) {
             this.totalPrice = totalPrice;
         }
+
         public boolean isCancelled() {
             return cancelled;
         }

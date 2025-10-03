@@ -1,6 +1,9 @@
 package com.makemytrip.makemytrip.models;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "hotels")
 public class Hotel {
@@ -11,7 +14,26 @@ public class Hotel {
     private double pricePerNight;
     private int availableRooms;
     private String amenities;
+    private String cancellationPolicy;
+    private List<Review> reviews = new ArrayList<>();
+
     // Getters and Setters
+    public List<Review> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
+    }
+
+    public String getCancellationPolicy() {
+        return cancellationPolicy;
+    }
+
+    public void setCancellationPolicy(String cancellationPolicy) {
+        this.cancellationPolicy = cancellationPolicy;
+    }
+
     public String getId() {
         return _id;
     }

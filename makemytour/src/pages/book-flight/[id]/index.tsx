@@ -1,5 +1,4 @@
 import { useRouter } from "next/router";
-
 import {
   Plane,
   Luggage,
@@ -14,19 +13,10 @@ import {
   Info,
   ArrowRight,
 } from "lucide-react";
+import ReviewList from "@/components/ReviewList";
 import { useEffect, useState } from "react";
 import { getflight, handleflightbooking } from "@/api";
 import { useDispatch, useSelector } from "react-redux";
-interface Flight {
-  id: string; // Unique identifier for the flight
-  flightName: string; // Name of the flight
-  from: string; // Departure location
-  to: string; // Arrival location
-  departureTime: string; // Departure time (ISO 8601 string recommended)
-  arrivalTime: string; // Arrival time (ISO 8601 string recommended)
-  price: number; // Price of the flight
-  availableSeats: number; // Number of available seats
-}
 import {
   Dialog,
   DialogContent,
@@ -41,6 +31,30 @@ import { Users, Ticket } from "lucide-react";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+
+// Define the Review interface
+interface Review {
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  helpfulCount: number;
+}
+
+// Update the Flight interface to include reviews
+interface Flight {
+  id: string;
+  flightName: string;
+  from: string;
+  to: string;
+  departureTime: string;
+  arrivalTime: string;
+  price: number;
+  availableSeats: number;
+  reviews?: Review[]; // Make reviews optional as they might not exist
+}
+
 const BookFlightPage = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -50,13 +64,19 @@ const BookFlightPage = () => {
   const [open, setopem] = useState(false);
   const user = useSelector((state: any) => state.user.user);
   const dispatch = useDispatch();
+
   useEffect(() => {
     const fetchFlights = async () => {
+      if (!id) return;
       try {
         const data = await getflight();
-        const filteredData = data.filter((flight: any) => flight.id === id);
-        setFlights(filteredData);
-        console.log(filteredData);
+        // FIX: Ensure data is an array before filtering
+        if (Array.isArray(data)) {
+          const filteredData = data.filter((flight: any) => flight.id === id);
+          setFlights(filteredData);
+        } else {
+          setFlights([]);
+        }
       } catch (error) {
         console.error("Error fetching flights:", error);
       } finally {
@@ -64,7 +84,7 @@ const BookFlightPage = () => {
       }
     };
     fetchFlights();
-  }, [id, user]);
+  }, [id]);
 
   if (loading) {
     return <Loader />;
@@ -72,73 +92,59 @@ const BookFlightPage = () => {
   if (flights.length === 0) {
     return <div>No flight data available for this ID.</div>;
   }
+
   const flight = flights[0];
+
+  const averageRating =
+    flight.reviews && flight.reviews.length > 0
+      ? (
+          flight.reviews.reduce((acc, review) => acc + review.rating, 0) /
+          flight.reviews.length
+        ).toFixed(1)
+      : "No ratings yet";
+
   const flightDetails = {
-    from: "Bengaluru",
-    to: "New Delhi",
-    date: "Thursday, Jan 16",
-    flightNo: "IX 2747",
-    aircraft: "Airbus A320",
-    airline: "Air India Express",
-    departureTime: "17:55",
-    arrivalTime: "20:55",
     duration: "3h 0m",
-    departureTerminal: "Bengaluru International Airport, Terminal T2",
-    arrivalTerminal: "Indira Gandhi International Airport, Terminal T3",
+    aircraft: "Airbus A320",
     cabinBaggage: "7 Kgs / Adult",
     checkInBaggage: "15 Kgs (1 piece only) / Adult",
   };
 
   const fareSummary = {
-    baseFare: 6124,
     taxes: 1374,
     otherServices: 249,
     discounts: -250,
-    total: 7497,
   };
 
-  const promoOffers = [
-    {
-      code: "MMTSECURE",
-      description:
-        "Get an instant discount of ₹299 on your flight booking and Trip Secure with this coupon!",
-      amount: 299,
-    },
-    {
-      code: "SPECIALUPI",
-      description:
-        "Use this code and get ₹362 instant discount on payments via UPI only!",
-      amount: 362,
-    },
-  ];
+    const hotels = [
+        {
+            name: "Hotel Park Tree",
+            rating: 4,
+            price: 9000,
+            image:
+                "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800",
+            location: "Near Airport, New Delhi",
+        },
+        {
+            name: "Lemon Tree Premier",
+            rating: 4,
+            price: 43875,
+            image:
+                "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800",
+            location: "Connaught Place, New Delhi",
+        },
+        {
+            name: "Hotel Kian",
+            rating: 4,
+            price: 1968,
+            image:
+                "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800",
+            location: "Karol Bagh, New Delhi",
+        },
+    ];
 
-  const hotels = [
-    {
-      name: "Hotel Park Tree",
-      rating: 4,
-      price: 9000,
-      image:
-        "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800",
-      location: "Near Airport, New Delhi",
-    },
-    {
-      name: "Lemon Tree Premier",
-      rating: 4,
-      price: 43875,
-      image:
-        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800",
-      location: "Connaught Place, New Delhi",
-    },
-    {
-      name: "Hotel Kian",
-      rating: 4,
-      price: 1968,
-      image:
-        "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800",
-      location: "Karol Bagh, New Delhi",
-    },
-  ];
   const formatDate = (dateString: string): string => {
+    if (!dateString) return "N/A";
     const options: Intl.DateTimeFormatOptions = {
       year: "numeric",
       month: "long",
@@ -176,7 +182,7 @@ const BookFlightPage = () => {
       );
       const updateuser = {
         ...user,
-        bookings: [...user.bookings, data],
+        bookings: [...(user.bookings || []), data],
       };
       dispatch(setUser(updateuser));
       setopem(false);
@@ -186,6 +192,7 @@ const BookFlightPage = () => {
       console.log(error);
     }
   };
+
   const BookingContent = () => (
     <DialogContent className="sm:max-w-[600px] bg-white">
       <DialogHeader>
@@ -304,9 +311,7 @@ const BookFlightPage = () => {
     <div className="min-h-screen bg-[#f4f7fa]">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Flight Details */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                 <div>
@@ -339,16 +344,17 @@ const BookFlightPage = () => {
                   <Plane className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <div className="font-semibold text-black">{flight.flightName}</div>
+                  <div className="font-semibold text-black">
+                    {flight.flightName}
+                  </div>
                   <div className="text-sm text-gray-600">
-                    {flightDetails.flightNo} • {flightDetails.aircraft}
+                    {flightDetails.aircraft}
                   </div>
                 </div>
                 <div className="ml-auto text-sm">
                   <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full">
                     Economy
                   </span>
-                  <span className="ml-2 text-gray-600">MMTSPECIAL</span>
                 </div>
               </div>
 
@@ -391,42 +397,13 @@ const BookFlightPage = () => {
                 </div>
                 <div className="flex items-center">
                   <Luggage className="w-5 h-5 mr-2 text-gray-500" />
-                  <span>Check-in Baggage: {flightDetails.checkInBaggage}</span>
+                  <span>
+                    Check-in Baggage: {flightDetails.checkInBaggage}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Cancellation Policy */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-black font-bold flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2 text-orange-500" />
-                  Cancellation & Date Change Policy
-                </h2>
-                <button className="text-blue-600 text-sm font-medium hover:text-blue-700">
-                  View Policy
-                </button>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Plane className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <span className="font-semibold text-black">BLR-DEL</span>
-                  </div>
-                  <div className="font-bold text-black">₹ 4,300</div>
-                </div>
-                <div className="h-2.5 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-full"></div>
-                <div className="flex justify-between mt-2 text-xs text-gray-600">
-                  <span>Now</span>
-                  <span>16 Jan, 15:55</span>
-                  <span>16 Jan, 17:55</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Hotel Offers */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-black font-bold flex items-center">
@@ -481,9 +458,28 @@ const BookFlightPage = () => {
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Fare Summary */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <h2 className="text-2xl text-black font-bold mb-2">
+                Ratings & Reviews
+              </h2>
+              <div className="flex items-center mb-6">
+                <Star className="w-6 h-6 text-yellow-400 fill-current mr-2" />
+                <span className="text-xl font-bold text-black">
+                  {averageRating}
+                </span>
+                <span className="text-gray-500 ml-2">
+                  ({flight.reviews?.length || 0} reviews)
+                </span>
+              </div>
+              <ReviewList
+                reviews={flight.reviews ?? []}
+                user={user}
+                productId={flight.id}
+                type="Flight"
+              />
+            </div>
+          </div>
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
               <h2 className="text-black font-bold mb-6 flex items-center">
@@ -526,7 +522,7 @@ const BookFlightPage = () => {
               </div>
               <Dialog open={open} onOpenChange={setopem}>
                 <DialogTrigger asChild>
-                  <Button className="w-full bg-red-600 text-white">
+                  <Button className="w-full mt-4 bg-red-600 text-white">
                     Book Now
                   </Button>
                 </DialogTrigger>
@@ -546,47 +542,6 @@ const BookFlightPage = () => {
                   </DialogContent>
                 )}
               </Dialog>
-              {/* Promo Codes */}
-              <div className="mt-8">
-                <div className="bg-[#FFF8E7] p-6 rounded-xl">
-                  <h3 className="font-bold text-black mb-4 flex items-center">
-                    <Gift className="w-5 h-5 mr-2 text-yellow-600" />
-                    PROMO CODES
-                  </h3>
-                  <div className="relative mb-4">
-                    <input
-                      type="text"
-                      placeholder="Enter promo code here"
-                      className="w-full text-black px-4 py-3 border border-gray-800 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    />
-                  </div>
-                  {promoOffers.map((offer, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-4 rounded-lg mb-3 shadow-sm"
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="radio"
-                          name="promo"
-                          className="mt-1.5 h-4 w-4 text-red-600 focus:ring-red-500"
-                        />
-                        <div>
-                          <div className="font-semibold text-red-600">
-                            {offer.code}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {offer.description}
-                          </p>
-                          <button className="text-blue-600 text-sm font-medium mt-2 hover:text-blue-700">
-                            Terms & Conditions
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>

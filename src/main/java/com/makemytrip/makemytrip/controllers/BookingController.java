@@ -1,4 +1,5 @@
 package com.makemytrip.makemytrip.controllers;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +13,20 @@ public class BookingController {
     private BookingService bookingService;
 
     @PostMapping("/flight")
-    public Users.Booking bookFlight(@RequestParam String userId,@RequestParam String flightId,@RequestParam int seats,@RequestParam double price){
-        return bookingService.bookFlight(userId,flightId,seats,price);
-    }
-    @PostMapping("/hotel")
-    public Users.Booking bookhotel (@RequestParam String userId,@RequestParam String hotelId,@RequestParam int rooms,@RequestParam double price){
-        return bookingService.bookhotel(userId,hotelId,rooms,price);
+    public Users.Booking bookFlight(@RequestParam String userId, @RequestParam String flightId, @RequestParam int seats,
+                                    @RequestParam double price) {
+        return bookingService.bookFlight(userId, flightId, seats, price);
     }
 
+    @PostMapping("/hotel")
+    public Users.Booking bookhotel(@RequestParam String userId, @RequestParam String hotelId, @RequestParam int rooms,
+                                   @RequestParam double price, @RequestParam String checkInDate) {
+        return bookingService.bookhotel(userId, hotelId, rooms, price, checkInDate);
+    }
+
+    @PostMapping("/cancel")
+    public Users.Booking cancelBooking(@RequestParam String userId, @RequestParam String bookingId,
+                                       @RequestParam String cancellationReason) {
+        return bookingService.cancelBooking(userId, bookingId, cancellationReason);
+    }
 }

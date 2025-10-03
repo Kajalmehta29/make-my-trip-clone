@@ -1,16 +1,22 @@
 package com.makemytrip.makemytrip.controllers;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.makemytrip.makemytrip.models.Users;
+
 import com.makemytrip.makemytrip.models.Flight;
 import com.makemytrip.makemytrip.models.Hotel;
-import com.makemytrip.makemytrip.repositories.UserRepository;
+import com.makemytrip.makemytrip.models.Users;
 import com.makemytrip.makemytrip.repositories.FlightRepository;
 import com.makemytrip.makemytrip.repositories.HotelRepository;
+import com.makemytrip.makemytrip.repositories.UserRepository;
+import com.makemytrip.makemytrip.services.FileStorageService;
+import com.makemytrip.makemytrip.services.ReviewService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
 @RestController
 @RequestMapping("/admin")
 @CrossOrigin(origins = "*")
@@ -23,6 +29,13 @@ public class AdminController {
 
     @Autowired
     private FlightRepository flightRepository;
+
+    @Autowired
+    private ReviewService reviewService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
 
     @GetMapping("/users")
     public ResponseEntity<List<Users>> getallusers(){
@@ -71,4 +84,19 @@ public class AdminController {
         return ResponseEntity.notFound().build();
     }
 
+    @PostMapping("/review/flag")
+    public ResponseEntity<?> flagReview(@RequestBody Map<String, String> payload) {
+        String productId = payload.get("productId");
+        String reviewId = payload.get("reviewId");
+        String type = payload.get("type");
+        reviewService.flagReview(productId, reviewId, type);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        String fileName = fileStorageService.storeFile(file);
+        String fileDownloadUri = "/uploads/" + fileName;
+        return ResponseEntity.ok(Map.of("url", fileDownloadUri));
+    }
 }
