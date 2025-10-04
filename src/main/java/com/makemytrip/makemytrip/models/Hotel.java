@@ -16,9 +16,11 @@ public class Hotel {
     private String amenities;
     private String cancellationPolicy;
     private List<Review> reviews = new ArrayList<>();
-    private List<RoomType> roomTypes = new ArrayList<>(); // Add this line
+    private List<RoomType> roomTypes = new ArrayList<>();
+    private List<PriceHistory> priceHistory = new ArrayList<>(); // Add this
 
-    // Getters and Setters
+    // Existing Getters and Setters...
+
     public List<Review> getReviews() {
         return reviews;
     }
@@ -89,5 +91,14 @@ public class Hotel {
 
     public void setRoomTypes(List<RoomType> roomTypes) {
         this.roomTypes = roomTypes;
+    }
+
+    // New Getter and Setter for price history
+    public List<PriceHistory> getPriceHistory() {
+        return priceHistory;
+    }
+
+    public void setPriceHistory(List<PriceHistory> priceHistory) {
+        this.priceHistory = priceHistory;
     }
 }

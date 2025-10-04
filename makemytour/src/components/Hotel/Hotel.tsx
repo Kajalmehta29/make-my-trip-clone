@@ -37,10 +37,10 @@ const HotelList = ({ onSelect }: any) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Hotel Name</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Price/Night</TableHead>
-            <TableHead>Action</TableHead>
+            <TableHead  className="text-black">Hotel Name</TableHead>
+            <TableHead  className="text-black">Location</TableHead>
+            <TableHead  className="text-black">Price/Night</TableHead>
+            <TableHead  className="text-black">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

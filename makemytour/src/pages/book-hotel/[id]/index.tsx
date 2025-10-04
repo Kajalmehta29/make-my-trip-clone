@@ -35,6 +35,8 @@ import CancellationPolicy from "@/components/CancellationPolicy";
 import ReviewList from "@/components/ReviewList";
 import RoomSelection from "@/components/RoomSelection";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import PriceHistoryGraph from "@/components/PriceHistoryGraph";
+import PriceFreeze from "@/components/PriceFreeze";
 
 // Define TypeScript interfaces for type safety
 interface Review {
@@ -57,6 +59,11 @@ interface RoomType {
   threeDPreviewUrl?: string;
 }
 
+interface PriceHistory {
+    date: string;
+    price: number;
+}
+
 interface Hotel {
   id: string;
   hotelName: string;
@@ -67,6 +74,7 @@ interface Hotel {
   cancellationPolicy: string;
   reviews: Review[];
   roomTypes?: RoomType[];
+  priceHistory?: PriceHistory[];
 }
 
 const BookHotelPage = () => {
@@ -88,14 +96,17 @@ const BookHotelPage = () => {
         const data = await gethotel();
         if (Array.isArray(data)) {
           const filteredData = data.filter((hotel: any) => hotel.id === id);
-          const hotelsWithRooms = filteredData.map((hotel) => ({
-            ...hotel,
-            roomTypes: [
-              { typeName: 'Standard Room', price: hotel.pricePerNight, availability: 10, threeDPreviewUrl: 'https://example.com/3d-standard' },
-              { typeName: 'Deluxe King Room', price: hotel.pricePerNight + 500, availability: 5, threeDPreviewUrl: 'https://example.com/3d-deluxe' },
-              { typeName: 'Ocean View Suite', price: hotel.pricePerNight + 1500, availability: 3, threeDPreviewUrl: 'https://example.com/3d-suite' },
-            ]
-          }));
+          const hotelsWithRooms = filteredData.map((hotel) => {
+            // If roomTypes are not coming from backend, create mock roomTypes
+            if (!hotel.roomTypes || hotel.roomTypes.length === 0) {
+                hotel.roomTypes = [
+                    { typeName: 'Standard Room', price: hotel.pricePerNight, availability: 10, threeDPreviewUrl: 'https://example.com/3d-standard' },
+                    { typeName: 'Deluxe King Room', price: hotel.pricePerNight + 500, availability: 5, threeDPreviewUrl: 'https://example.com/3d-deluxe' },
+                    { typeName: 'Ocean View Suite', price: hotel.pricePerNight + 1500, availability: 3, threeDPreviewUrl: 'https://example.com/3d-suite' },
+                ]
+            }
+            return hotel;
+          });
           sethotels(hotelsWithRooms);
         } else {
           sethotels([]);
@@ -155,6 +166,10 @@ const BookHotelPage = () => {
       ],
       taxes: 527,
     },
+  };
+  
+  const handleFreeze = () => {
+    console.log("Price frozen!");
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,86 +465,92 @@ const BookHotelPage = () => {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
-              <h3 className="text-xl text-black font-semibold mb-4">
-                {hotelData.room.type}
-              </h3>
-              <p className="text-gray-600 mb-4">{hotelData.room.capacity}</p>
+            <div className="sticky top-24 space-y-6">
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl text-black font-semibold mb-4">
+                    {hotelData.room.type}
+                </h3>
+                <p className="text-gray-600 mb-4">{hotelData.room.capacity}</p>
 
-              <ul className="space-y-3 mb-6">
-                {hotelData.room.features.map((feature, index) => (
-                  <li key={index} className="flex items-start space-x-2">
-                    <span className="text-gray-400">•</span>
-                    <span className="text-gray-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-800 font-semibold">
-                    Price Per Night:
-                  </span>
-                  <span className="text-lg font-medium text-gray-800">
-                    ₹ {totalPrice}
-                  </span>
+                <ul className="space-y-3 mb-6">
+                    {hotelData.room.features.map((feature, index) => (
+                    <li key={index} className="flex items-start space-x-2">
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-600">{feature}</span>
+                    </li>
+                    ))}
+                </ul>
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-800 font-semibold">
+                        Price Per Night:
+                    </span>
+                    <span className="text-lg font-medium text-gray-800">
+                        ₹ {totalPrice}
+                    </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-4">
+                    <span className="text-gray-800 font-semibold">
+                        Available Rooms:
+                    </span>
+                    <span className="text-lg font-medium text-gray-800">
+                        {hotel.availableRooms}
+                    </span>
+                    </div>
+                    <div>
+                    <h4 className="text-gray-800 font-semibold mb-2">
+                        Amenities:
+                    </h4>
+                    <p className="text-gray-600">{hotel.amenities}</p>
+                    </div>
+                    <div className="mt-4">
+                    <h4 className="text-gray-800 font-semibold mb-2">
+                        Cancellation Policy:
+                    </h4>
+                    <p className="text-gray-600">{hotel.cancellationPolicy}</p>
+                    </div>
                 </div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-gray-800 font-semibold">
-                    Available Rooms:
-                  </span>
-                  <span className="text-lg font-medium text-gray-800">
-                    {hotel.availableRooms}
-                  </span>
+                <div className="space-y-2 mb-6">
+                    <div className="flex items-center justify-between">
+                    <span className="text-gray-500 line-through">
+                        ₹ {totalPrice}
+                    </span>
+                    <span className="text-gray-500">Per Night:</span>
+                    </div>
+                    <div className="flex items-center justify-between text-2xl text-black font-bold">
+                    <span>₹ {grandTotal}</span>
+                    <span className="text-sm text-gray-500 font-normal">
+                        + ₹ {totalTaxes} taxes & fees
+                    </span>
+                    </div>
                 </div>
-                <div>
-                  <h4 className="text-gray-800 font-semibold mb-2">
-                    Amenities:
-                  </h4>
-                  <p className="text-gray-600">{hotel.amenities}</p>
+                <Dialog open={open} onOpenChange={setopem}>
+                    <DialogTrigger asChild>
+                    <button className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors mb-3">
+                        BOOK THIS NOW
+                    </button>
+                    </DialogTrigger>
+                    {user ? (
+                    <HotelContent />
+                    ) : (
+                    <DialogContent className="bg-white">
+                        <DialogHeader>
+                        <DialogTitle>Login Required</DialogTitle>
+                        </DialogHeader>
+                        <p>Please log in to continue with your booking.</p>
+                        <SignupDialog
+                        trigger={
+                            <Button className="w-full">Log In / Sign Up</Button>
+                        }
+                        />
+                    </DialogContent>
+                    )}
+                </Dialog>
                 </div>
-                <div className="mt-4">
-                  <h4 className="text-gray-800 font-semibold mb-2">
-                    Cancellation Policy:
-                  </h4>
-                  <p className="text-gray-600">{hotel.cancellationPolicy}</p>
-                </div>
-              </div>
-              <div className="space-y-2 mb-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 line-through">
-                    ₹ {totalPrice}
-                  </span>
-                  <span className="text-gray-500">Per Night:</span>
-                </div>
-                <div className="flex items-center justify-between text-2xl text-black font-bold">
-                  <span>₹ {grandTotal}</span>
-                  <span className="text-sm text-gray-500 font-normal">
-                    + ₹ {totalTaxes} taxes & fees
-                  </span>
-                </div>
-              </div>
-              <Dialog open={open} onOpenChange={setopem}>
-                <DialogTrigger asChild>
-                  <button className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors mb-3">
-                    BOOK THIS NOW
-                  </button>
-                </DialogTrigger>
-                {user ? (
-                  <HotelContent />
-                ) : (
-                  <DialogContent className="bg-white">
-                    <DialogHeader>
-                      <DialogTitle>Login Required</DialogTitle>
-                    </DialogHeader>
-                    <p>Please log in to continue with your booking.</p>
-                    <SignupDialog
-                      trigger={
-                        <Button className="w-full">Log In / Sign Up</Button>
-                      }
-                    />
-                  </DialogContent>
+                {hotel.priceHistory && (
+                    <PriceHistoryGraph priceHistory={hotel.priceHistory} />
                 )}
-              </Dialog>
+                <PriceFreeze price={grandTotal} onFreeze={handleFreeze} />
             </div>
           </div>
         </div>

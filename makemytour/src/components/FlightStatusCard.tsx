@@ -1,7 +1,14 @@
 import React from "react";
 import { Plane, Clock, AlertTriangle, CheckCircle } from "lucide-react";
 
-const FlightStatusCard = ({ status }) => {
+type FlightStatus = {
+  status: "On Time" | "Delayed" | "Departed" | "Arrived" | string;
+  flightNumber: string;
+  delayReason?: string;
+  estimatedArrivalTime?: string | number | Date;
+};
+
+const FlightStatusCard: React.FC<{ status: FlightStatus }> = ({ status }) => {
   const getStatusIcon = () => {
     switch (status.status) {
       case "On Time":

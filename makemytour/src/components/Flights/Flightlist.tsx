@@ -35,11 +35,11 @@ const FlightList = ({ onSelect }: any) => {
       <h3 className="text-lg font-semibold mb-2">Flight List</h3>
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Flight Name</TableHead>
-            <TableHead>From</TableHead>
-            <TableHead>To</TableHead>
-            <TableHead>Action</TableHead>
+          <TableRow >
+            <TableHead  className="text-black">Flight Name</TableHead>
+            <TableHead  className="text-black">From</TableHead>
+            <TableHead  className="text-black">To</TableHead>
+            <TableHead  className="text-black">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

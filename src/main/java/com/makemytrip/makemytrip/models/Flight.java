@@ -10,7 +10,7 @@ public class Flight {
     @Id
     private String _id;
     private String flightName;
-    private String flightNumber; // New Field
+    private String flightNumber;
     private String from;
     private String to;
     private String departureTime;
@@ -19,9 +19,11 @@ public class Flight {
     private int availableSeats;
     private String cancellationPolicy;
     private List<Review> reviews = new ArrayList<>();
-    private List<Seat> seats = new ArrayList<>(); // Add this line
+    private List<Seat> seats = new ArrayList<>();
+    private List<PriceHistory> priceHistory = new ArrayList<>(); // Add this
 
-    // Getters and Setters
+    // Existing Getters and Setters...
+
     public String getFlightNumber() {
         return flightNumber;
     }
@@ -116,5 +118,14 @@ public class Flight {
 
     public void setSeats(List<Seat> seats) {
         this.seats = seats;
+    }
+
+    // New Getter and Setter for price history
+    public List<PriceHistory> getPriceHistory() {
+        return priceHistory;
+    }
+
+    public void setPriceHistory(List<PriceHistory> priceHistory) {
+        this.priceHistory = priceHistory;
     }
 }

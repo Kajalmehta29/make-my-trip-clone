@@ -33,6 +33,8 @@ import Loader from "@/components/Loader";
 import { setUser } from "@/store";
 import SeatSelection from "@/components/SeatSelection";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import PriceHistoryGraph from "@/components/PriceHistoryGraph";
+import PriceFreeze from "@/components/PriceFreeze";
 
 // Define the Review interface
 interface Review {
@@ -52,6 +54,12 @@ interface Seat {
   price: number;
 }
 
+// Define the PriceHistory interface
+interface PriceHistory {
+    date: string;
+    price: number;
+}
+
 // Update the Flight interface to include reviews and seats
 interface Flight {
   id: string;
@@ -63,7 +71,8 @@ interface Flight {
   price: number;
   availableSeats: number;
   reviews?: Review[];
-  seats?: Seat[]; // Add seats to the interface
+  seats?: Seat[];
+  priceHistory?: PriceHistory[];
 }
 
 const BookFlightPage = () => {
@@ -84,17 +93,20 @@ const BookFlightPage = () => {
         const data = await getflight();
         if (Array.isArray(data)) {
           const filteredData = data.filter((flight: any) => flight.id === id);
-          const flightsWithSeats = filteredData.map((flight) => ({
-            ...flight,
-            seats: Array.from({ length: 30 }, (_, i) => ({
-              seatNumber: `${Math.floor(i / 6) + 1}${String.fromCharCode(
-                65 + (i % 6)
-              )}`,
-              isAvailable: Math.random() > 0.3,
-              isPremium: Math.random() > 0.8,
-              price: Math.random() > 0.8 ? 500 : 0, // Add a price for premium seats
-            })),
-          }));
+          const flightsWithSeats = filteredData.map((flight) => {
+            // If seats are not coming from backend, create mock seats
+            if (!flight.seats || flight.seats.length === 0) {
+              flight.seats = Array.from({ length: 30 }, (_, i) => ({
+                seatNumber: `${Math.floor(i / 6) + 1}${String.fromCharCode(
+                  65 + (i % 6)
+                )}`,
+                isAvailable: Math.random() > 0.3,
+                isPremium: Math.random() > 0.8,
+                price: Math.random() > 0.8 ? 500 : 0,
+              }));
+            }
+            return flight;
+          });
           setFlights(flightsWithSeats);
         } else {
           setFlights([]);
@@ -145,6 +157,10 @@ const BookFlightPage = () => {
     otherServices: 249,
     discounts: -250,
   };
+  
+    const handleFreeze = () => {
+        console.log("Price frozen!");
+    };
 
   const hotels = [
     {
@@ -288,7 +304,7 @@ const BookFlightPage = () => {
                 min="1"
                 max={flight.availableSeats}
                 value={quantity}
-                readOnly // Make this read-only as it's now controlled by seat selection
+                readOnly 
               />
             </div>
           </div>
@@ -530,67 +546,73 @@ const BookFlightPage = () => {
             </div>
           </div>
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
-              <h2 className="text-black font-bold mb-6 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
-                Fare Summary
-              </h2>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Base Fare</span>
-                  <span className="font-medium text-gray-800">
-                    ₹ {totalPrice.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Taxes and Surcharges</span>
-                  <span className="font-medium text-gray-800">
-                    ₹ {totalTaxes.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Other Services</span>
-                  <span className="font-medium text-gray-800">
-                    ₹ {totalOtherServices.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-green-600">
-                  <span className="font-medium">Discounts</span>
-                  <span className="font-medium">
-                    - ₹ {Math.abs(totalDiscounts).toLocaleString()}
-                  </span>
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-black">Total Amount</span>
-                    <span className="font-bold text-gray-800">
-                      ₹ {grandTotal.toLocaleString()}
+            <div className="sticky top-24 space-y-6">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-black font-bold mb-6 flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
+                    Fare Summary
+                </h2>
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Base Fare</span>
+                    <span className="font-medium text-gray-800">
+                        ₹ {totalPrice.toLocaleString()}
                     </span>
-                  </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Taxes and Surcharges</span>
+                    <span className="font-medium text-gray-800">
+                        ₹ {totalTaxes.toLocaleString()}
+                    </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Other Services</span>
+                    <span className="font-medium text-gray-800">
+                        ₹ {totalOtherServices.toLocaleString()}
+                    </span>
+                    </div>
+                    <div className="flex justify-between items-center text-green-600">
+                    <span className="font-medium">Discounts</span>
+                    <span className="font-medium">
+                        - ₹ {Math.abs(totalDiscounts).toLocaleString()}
+                    </span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                        <span className="font-bold text-black">Total Amount</span>
+                        <span className="font-bold text-gray-800">
+                        ₹ {grandTotal.toLocaleString()}
+                        </span>
+                    </div>
+                    </div>
                 </div>
-              </div>
-              <Dialog open={open} onOpenChange={setopem}>
-                <DialogTrigger asChild>
-                  <Button className="w-full mt-4 bg-red-600 text-white">
-                    Book Now
-                  </Button>
-                </DialogTrigger>
-                {user ? (
-                  <BookingContent />
-                ) : (
-                  <DialogContent className="bg-white">
-                    <DialogHeader>
-                      <DialogTitle>Login Required</DialogTitle>
-                    </DialogHeader>
-                    <p>Please log in to continue with your booking.</p>
-                    <SignupDialog
-                      trigger={
-                        <Button className="w-full">Log In / Sign Up</Button>
-                      }
-                    />
-                  </DialogContent>
+                <Dialog open={open} onOpenChange={setopem}>
+                    <DialogTrigger asChild>
+                    <Button className="w-full mt-4 bg-red-600 text-white">
+                        Book Now
+                    </Button>
+                    </DialogTrigger>
+                    {user ? (
+                    <BookingContent />
+                    ) : (
+                    <DialogContent className="bg-white">
+                        <DialogHeader>
+                        <DialogTitle>Login Required</DialogTitle>
+                        </DialogHeader>
+                        <p>Please log in to continue with your booking.</p>
+                        <SignupDialog
+                        trigger={
+                            <Button className="w-full">Log In / Sign Up</Button>
+                        }
+                        />
+                    </DialogContent>
+                    )}
+                </Dialog>
+                </div>
+                {flight.priceHistory && (
+                    <PriceHistoryGraph priceHistory={flight.priceHistory} />
                 )}
-              </Dialog>
+                <PriceFreeze price={grandTotal} onFreeze={handleFreeze} />
             </div>
           </div>
         </div>

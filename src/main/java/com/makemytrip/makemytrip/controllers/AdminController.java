@@ -3,16 +3,20 @@ package com.makemytrip.makemytrip.controllers;
 import com.makemytrip.makemytrip.models.Flight;
 import com.makemytrip.makemytrip.models.Hotel;
 import com.makemytrip.makemytrip.models.Users;
+import com.makemytrip.makemytrip.models.Seat;
+import com.makemytrip.makemytrip.models.RoomType;
 import com.makemytrip.makemytrip.repositories.FlightRepository;
 import com.makemytrip.makemytrip.repositories.HotelRepository;
 import com.makemytrip.makemytrip.repositories.UserRepository;
 import com.makemytrip.makemytrip.services.FileStorageService;
+import com.makemytrip.makemytrip.services.PriceHistoryService;
 import com.makemytrip.makemytrip.services.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +39,9 @@ public class AdminController {
 
     @Autowired
     private FileStorageService fileStorageService;
+    
+    @Autowired
+    private PriceHistoryService priceHistoryService;
 
 
     @GetMapping("/users")
@@ -44,11 +51,36 @@ public class AdminController {
     }
     @PostMapping("/flight")
     public Flight addflight(@RequestBody Flight flight){
+        List<Seat> seats = new ArrayList<>();
+        for (int i = 1; i <= 30; i++) {
+            Seat seat = new Seat();
+            seat.setSeatNumber(String.valueOf(i));
+            seat.setIsAvailable(true);
+            seat.setIsPremium(i % 10 == 0); 
+            seat.setPrice(seat.getIsPremium() ? 500 : 0);
+            seats.add(seat);
+        }
+        flight.setSeats(seats);
         return flightRepository.save(flight);
     }
 
     @PostMapping("/hotel")
     public Hotel addhotel(@RequestBody Hotel hotel){
+        List<RoomType> roomTypes = new ArrayList<>();
+        
+        RoomType standard = new RoomType();
+        standard.setTypeName("Standard Room");
+        standard.setPrice(hotel.getPricePerNight());
+        standard.setAvailability(10);
+        roomTypes.add(standard);
+
+        RoomType deluxe = new RoomType();
+        deluxe.setTypeName("Deluxe Room");
+        deluxe.setPrice(hotel.getPricePerNight() + 2000);
+        deluxe.setAvailability(5);
+        roomTypes.add(deluxe);
+
+        hotel.setRoomTypes(roomTypes);
         return hotelRepository.save(hotel);
     }
     @PutMapping("flight/{id}")
@@ -98,5 +130,11 @@ public class AdminController {
         String fileName = fileStorageService.storeFile(file);
         String fileDownloadUri = "/uploads/" + fileName;
         return ResponseEntity.ok(Map.of("url", fileDownloadUri));
+    }
+
+    @PostMapping("/record-history")
+    public ResponseEntity<String> recordPriceHistory() {
+        priceHistoryService.recordPriceHistory();
+        return ResponseEntity.ok("Price history recorded successfully.");
     }
 }

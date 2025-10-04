@@ -28,67 +28,10 @@ import {
   editflight,
   edithotel,
   getuserbyemail,
+  recordPriceHistory, // Make sure to import this
 } from "@/api";
 import HotelList from "@/components/Hotel/Hotel";
-const mockFlights = [
-  {
-    _id: "1",
-    flightName: "AirOne 101",
-    from: "New York",
-    to: "London",
-    departureTime: "2023-07-01T08:00",
-    arrivalTime: "2023-07-01T20:00",
-    price: 500,
-    availableSeats: 150,
-  },
-  {
-    _id: "2",
-    flightName: "SkyHigh 202",
-    from: "Paris",
-    to: "Tokyo",
-    departureTime: "2023-07-02T10:00",
-    arrivalTime: "2023-07-03T06:00",
-    price: 800,
-    availableSeats: 200,
-  },
-  {
-    _id: "3",
-    flightName: "EagleWings 303",
-    from: "Los Angeles",
-    to: "Sydney",
-    departureTime: "2023-07-03T22:00",
-    arrivalTime: "2023-07-05T06:00",
-    price: 1200,
-    availableSeats: 180,
-  },
-];
 
-const mockHotels = [
-  {
-    _id: "1",
-    hotelName: "Luxury Palace",
-    location: "Paris, France",
-    pricePerNight: 300,
-    availableRooms: 50,
-    amenities: "Wi-Fi, Pool, Spa, Restaurant",
-  },
-  {
-    _id: "2",
-    hotelName: "Seaside Resort",
-    location: "Bali, Indonesia",
-    pricePerNight: 200,
-    availableRooms: 100,
-    amenities: "Beach Access, Wi-Fi, Restaurant, Water Sports",
-  },
-  {
-    _id: "3",
-    hotelName: "Mountain Lodge",
-    location: "Aspen, Colorado",
-    pricePerNight: 250,
-    availableRooms: 30,
-    amenities: "Ski-in/Ski-out, Fireplace, Hot Tub, Restaurant",
-  },
-];
 interface User {
   _id: string;
   firstName: string;
@@ -105,8 +48,7 @@ function UserSearch() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = await getuserbyemail(email);
-    const mockUser: User = data;
-    setUser(mockUser);
+    setUser(data);
   };
 
   return (
@@ -325,7 +267,6 @@ function AddEditFlight({ flight }: { flight: Flight | null }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send this data to your backend
     console.log("Submitting flight data:", formData);
     if (flight) {
       await editflight(
@@ -450,15 +391,28 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("flights");
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  
+  const handleRecordHistory = async () => {
+    try {
+      await recordPriceHistory();
+      alert("Price history has been recorded.");
+    } catch (error) {
+      console.error("Failed to record price history:", error);
+      alert("Failed to record price history.");
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 bg-white max-w-full">
-      <h1 className="text-3xl font-bold mb-6 ">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl text-black font-bold">Admin Dashboard</h1>
+        <Button onClick={handleRecordHistory}>Record Price History</Button>
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3  text-black">
-          <TabsTrigger value="flights">Flights</TabsTrigger>
-          <TabsTrigger value="hotels">Hotels</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 ">
+          <TabsTrigger value="flights" className="text-red">Flights</TabsTrigger>
+          <TabsTrigger value="hotels" className="text-red">Hotels</TabsTrigger>
+          <TabsTrigger value="users" className="text-red">Users</TabsTrigger>
         </TabsList>
         <TabsContent value="flights">
           <Card>

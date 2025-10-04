@@ -288,10 +288,6 @@ export const flagReview = async (productId, reviewId, type) => {
   }
 };
 
-/**
- * Marks a review as helpful.
- * This is the new function.
- */
 export const markHelpful = async (productId, reviewId, type, userId) => {
   try {
     const res = await axios.post(
@@ -306,6 +302,16 @@ export const markHelpful = async (productId, reviewId, type, userId) => {
 export const getFlightStatus = async (flightNumber) => {
   try {
     const res = await axios.get(`${BACKEND_URL}/flight-status/${flightNumber}`);
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Add this new function
+export const recordPriceHistory = async () => {
+  try {
+    const res = await axios.post(`${BACKEND_URL}/admin/record-history`);
     return res.data;
   } catch (error) {
     throw error;
